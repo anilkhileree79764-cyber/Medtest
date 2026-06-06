@@ -2,1176 +2,693 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-<title>MedTest — NEET Preparation Platform</title>
-<meta name="description" content="MedTest — India's smart NEET preparation platform with AI doubt solver, adaptive tests and deep analytics"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<title>MedTest - NEET Preparation</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #0a0f1e; font-family: Georgia, serif; }
-  #root { min-height: 100vh; }
-  #loading { display:flex; align-items:center; justify-content:center; height:100vh; background:#0a0f1e; color:#10b981; font-size:18px; font-family:Georgia,serif; flex-direction:column; gap:12px; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Georgia,serif;background:#0a0f1e;color:#e8eaf0;min-height:100vh}
+input,textarea,button{font-family:Georgia,serif}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}c
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
+.fade{animation:fadein 0.2s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
 <body>
-<div id="loading">
-  <div style="font-size:48px">🩺</div>
-  <div style="font-size:20px;font-weight:700;color:#fff;letter-spacing:2px">MedTest</div>
-  <div style="font-size:12px;color:#6ee7b7;letter-spacing:3px">LOADING...</div>
-</div>
-<div id="root"></div>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script type="text/babel">
-import { useState, useEffect, useRef, useCallback } from "react";
+<div id="app"></div>
+<script>
+const SB_URL="https://zomoywromjpqccwiurhl.supabase.co";
+const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvbW95d3JvbWpwcWNjd2l1cmhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3MDgxMDEsImV4cCI6MjA5NjI4NDEwMX0.3FXJau9Bf1P6C7Q3Pxyyu-sST_4um091bhmeMCvG6jY";
+const SH={"Content-Type":"application/json","apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY};
 
-// ── Supabase Config ──────────────────────────────────────────────────────────
-const SUPABASE_URL = "https://zomoywromjpqccwiurhl.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvbW95d3JvbWpwcWNjd2l1cmhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3MDgxMDEsImV4cCI6MjA5NjI4NDEwMX0.3FXJau9Bf1P6C7Q3Pxyyu-sST_4um091bhmeMCvG6jY";
-const H = { "Content-Type":"application/json","apikey":SUPABASE_KEY,"Authorization":`Bearer ${SUPABASE_KEY}` };
-
-const sb = {
-  async signUp(email, password) {
-    const r = await fetch(`${SUPABASE_URL}/auth/v1/signup`, { method:"POST", headers:H, body:JSON.stringify({email,password}) });
-    return await r.json();
-  },
-  async signIn(email, password) {
-    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, { method:"POST", headers:H, body:JSON.stringify({email,password}) });
-    return await r.json();
-  },
-  async saveProfile(profile) {
-    try {
-      await fetch(`${SUPABASE_URL}/rest/v1/profiles`, { method:"POST", headers:{...H,"Prefer":"resolution=merge-duplicates"}, body:JSON.stringify(profile) });
-    } catch {}
-  },
-  async getProfile(email) {
-    try {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&limit=1`, { headers:H });
-      const d = await r.json(); return d[0]||null;
-    } catch { return null; }
-  },
-  async saveResult(result) {
-    try {
-      await fetch(`${SUPABASE_URL}/rest/v1/test_results`, { method:"POST", headers:H, body:JSON.stringify(result) });
-    } catch {}
-  },
-  async getResults(email) {
-    try {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/test_results?student_email=eq.${encodeURIComponent(email)}&order=created_at.asc`, { headers:H });
-      return await r.json();
-    } catch { return []; }
-  }
+const sb={
+  async signUp(e,p){const r=await fetch(SB_URL+"/auth/v1/signup",{method:"POST",headers:SH,body:JSON.stringify({email:e,password:p})});return r.json()},
+  async signIn(e,p){const r=await fetch(SB_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:SH,body:JSON.stringify({email:e,password:p})});return r.json()},
+  async saveProfile(d){try{await fetch(SB_URL+"/rest/v1/profiles",{method:"POST",headers:Object.assign({},SH,{"Prefer":"resolution=merge-duplicates"}),body:JSON.stringify(d)})}catch(e){}},
+  async getProfile(email){try{const r=await fetch(SB_URL+"/rest/v1/profiles?email=eq."+encodeURIComponent(email)+"&limit=1",{headers:SH});const d=await r.json();return d[0]||null}catch(e){return null}},
+  async saveResult(d){try{await fetch(SB_URL+"/rest/v1/test_results",{method:"POST",headers:SH,body:JSON.stringify(d)})}catch(e){}},
+  async getResults(email){try{const r=await fetch(SB_URL+"/rest/v1/test_results?student_email=eq."+encodeURIComponent(email)+"&order=created_at.asc",{headers:SH});return r.json()}catch(e){return[]}}
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DATA
-// ─────────────────────────────────────────────────────────────────────────────
-const QUESTIONS = [
-  { id:1,  subject:"Biology",   chapter:"Cell Biology",      difficulty:"Medium", en:{q:"Which organelle is the 'powerhouse of the cell'?",            options:["Nucleus","Mitochondria","Ribosome","Golgi Body"]},       hi:{q:"किस अंगक को कोशिका का 'पावरहाउस' कहा जाता है?",        options:["केन्द्रक","माइटोकॉन्ड्रिया","राइबोसोम","गॉल्जी बॉडी"]}, answer:1, explanation:"Mitochondria produce ATP via cellular respiration. They have their own DNA — evidence for endosymbiotic theory." },
-  { id:2,  subject:"Physics",   chapter:"Laws of Motion",    difficulty:"Easy",   en:{q:"Newton's second law: Force equals?",                          options:["mass × velocity","mass × acceleration","mass × distance","mass × time"]}, hi:{q:"न्यूटन का दूसरा नियम: बल बराबर है?", options:["द्रव्यमान×वेग","द्रव्यमान×त्वरण","द्रव्यमान×दूरी","द्रव्यमान×समय"]}, answer:1, explanation:"F = ma. The cornerstone of classical mechanics. Net force = mass × acceleration." },
-  { id:3,  subject:"Chemistry", chapter:"Periodic Table",    difficulty:"Easy",   en:{q:"Atomic number of Carbon?",                                    options:["4","6","8","12"]},                                        hi:{q:"कार्बन की परमाणु संख्या?",                              options:["4","6","8","12"]},                                          answer:1, explanation:"Carbon has 6 protons → atomic number 6. Group 14, Period 2. Basis of all organic chemistry." },
-  { id:4,  subject:"Biology",   chapter:"Genetics",          difficulty:"Hard",   en:{q:"Which base pairs with Adenine in DNA?",                       options:["Guanine","Cytosine","Thymine","Uracil"]},                hi:{q:"DNA में Adenine के साथ कौन सा base जोड़ी बनाता है?",   options:["गुआनिन","साइटोसिन","थाइमिन","यूरेसिल"]},              answer:2, explanation:"A–T (2 H-bonds), G–C (3 H-bonds) in DNA. In RNA, Adenine pairs with Uracil." },
-  { id:5,  subject:"Chemistry", chapter:"Chemical Bonding",  difficulty:"Medium", en:{q:"Type of bond in NaCl?",                                       options:["Covalent","Metallic","Ionic","Hydrogen"]},               hi:{q:"NaCl में बंध का प्रकार?",                               options:["सहसंयोजक","धात्विक","आयनिक","हाइड्रोजन"]},           answer:2, explanation:"Na donates e⁻→Na⁺, Cl accepts→Cl⁻. Electrostatic attraction = ionic bond." },
-  { id:6,  subject:"Biology",   chapter:"Human Physiology",  difficulty:"Medium", en:{q:"Which part of the brain controls breathing and heartbeat?",   options:["Cerebrum","Cerebellum","Medulla Oblongata","Hypothalamus"]}, hi:{q:"मस्तिष्क का कौन सा भाग श्वास व हृदय स्पंदन नियंत्रित करता है?", options:["प्रमस्तिष्क","अनुमस्तिष्क","मेड्यूला ऑब्लोंगेटा","हाइपोथैलेमस"]}, answer:2, explanation:"Medulla Oblongata (brainstem) controls involuntary functions: breathing, heart rate, BP." },
-  { id:7,  subject:"Physics",   chapter:"Thermodynamics",    difficulty:"Hard",   en:{q:"Which law states energy cannot be created or destroyed?",     options:["Zeroth Law","First Law","Second Law","Third Law"]},      hi:{q:"कौन सा नियम कहता है ऊर्जा न बनाई न नष्ट होती है?",    options:["शून्य नियम","प्रथम नियम","द्वितीय नियम","तृतीय नियम"]}, answer:1, explanation:"1st Law = Conservation of Energy. ΔU = Q − W. Total energy of isolated system is constant." },
-  { id:8,  subject:"Chemistry", chapter:"Organic Chemistry", difficulty:"Medium", en:{q:"Functional group in alcohols?",                               options:["-COOH","-CHO","-OH","-NH₂"]},                           hi:{q:"एल्कोहल में कार्यात्मक समूह?",                          options:["-COOH","-CHO","-OH","-NH₂"]},                              answer:2, explanation:"-OH (hydroxyl group) defines alcohols. It enables H-bonding → higher boiling points." },
-  { id:9,  subject:"Biology",   chapter:"Cell Biology",      difficulty:"Easy",   en:{q:"Cell membrane is made of?",                                   options:["Proteins only","Lipid bilayer","Carbohydrates","DNA"]},  hi:{q:"कोशिका झिल्ली किससे बनी होती है?",                     options:["केवल प्रोटीन","लिपिड द्विस्तर","कार्बोहाइड्रेट","DNA"]}, answer:1, explanation:"Phospholipid bilayer with embedded proteins (fluid mosaic model by Singer-Nicolson)." },
-  { id:10, subject:"Physics",   chapter:"Laws of Motion",    difficulty:"Medium", en:{q:"A body at rest will remain at rest unless acted on by?",       options:["Gravity","External force","Friction","Inertia"]},        hi:{q:"एक स्थिर वस्तु तब तक स्थिर रहेगी जब तक?",             options:["गुरुत्वाकर्षण","बाह्य बल","घर्षण","जड़त्व"]},         answer:1, explanation:"Newton's 1st Law (Law of Inertia): without net external force, objects maintain their state." },
-  { id:11, subject:"Biology",   chapter:"Genetics",          difficulty:"Medium", en:{q:"Who is known as the Father of Genetics?",                     options:["Darwin","Mendel","Watson","Morgan"]},                    hi:{q:"आनुवंशिकी का जनक किसे कहा जाता है?",                   options:["डार्विन","मेंडल","वाटसन","मॉर्गन"]},                   answer:1, explanation:"Gregor Mendel's pea plant experiments (1866) laid the foundation of genetics — laws of segregation and independent assortment." },
-  { id:12, subject:"Chemistry", chapter:"Periodic Table",    difficulty:"Hard",   en:{q:"Which group elements are called Noble gases?",                options:["Group 1","Group 16","Group 17","Group 18"]},             hi:{q:"कौन से वर्ग के तत्वों को नोबल गैस कहते हैं?",          options:["वर्ग 1","वर्ग 16","वर्ग 17","वर्ग 18"]},               answer:3, explanation:"Group 18 = Noble gases (He, Ne, Ar, Kr, Xe, Rn). Full valence shells → extremely low reactivity." },
+const QS=[
+  {id:1,sub:"Biology",ch:"Cell Biology",dif:"Medium",en:{q:"Which organelle is the powerhouse of the cell?",o:["Nucleus","Mitochondria","Ribosome","Golgi Body"]},hi:{q:"किस अंगक को कोशिका का पावरहाउस कहा जाता है?",o:["केन्द्रक","माइटोकॉन्ड्रिया","राइबोसोम","गॉल्जी बॉडी"]},a:1,exp:"Mitochondria produce ATP via cellular respiration. Evidence for endosymbiotic theory."},
+  {id:2,sub:"Physics",ch:"Laws of Motion",dif:"Easy",en:{q:"Newton's second law: Force equals?",o:["mass x velocity","mass x acceleration","mass x distance","mass x time"]},hi:{q:"न्यूटन का दूसरा नियम: बल बराबर है?",o:["द्रव्यमान x वेग","द्रव्यमान x त्वरण","द्रव्यमान x दूरी","द्रव्यमान x समय"]},a:1,exp:"F = ma. The cornerstone of classical mechanics."},
+  {id:3,sub:"Chemistry",ch:"Periodic Table",dif:"Easy",en:{q:"Atomic number of Carbon?",o:["4","6","8","12"]},hi:{q:"कार्बन की परमाणु संख्या?",o:["4","6","8","12"]},a:1,exp:"Carbon has 6 protons. Group 14, Period 2."},
+  {id:4,sub:"Biology",ch:"Genetics",dif:"Hard",en:{q:"Which base pairs with Adenine in DNA?",o:["Guanine","Cytosine","Thymine","Uracil"]},hi:{q:"DNA में Adenine के साथ कौन सा base जोड़ी बनाता है?",o:["गुआनिन","साइटोसिन","थाइमिन","यूरेसिल"]},a:2,exp:"A-T (2 H-bonds), G-C (3 H-bonds) in DNA."},
+  {id:5,sub:"Chemistry",ch:"Chemical Bonding",dif:"Medium",en:{q:"Type of bond in NaCl?",o:["Covalent","Metallic","Ionic","Hydrogen"]},hi:{q:"NaCl में बंध का प्रकार?",o:["सहसंयोजक","धात्विक","आयनिक","हाइड्रोजन"]},a:2,exp:"Na loses e- to become Na+, Cl gains it. Ionic bond."},
+  {id:6,sub:"Biology",ch:"Human Physiology",dif:"Medium",en:{q:"Which brain part controls breathing?",o:["Cerebrum","Cerebellum","Medulla Oblongata","Hypothalamus"]},hi:{q:"मस्तिष्क का कौन सा भाग श्वास नियंत्रित करता है?",o:["प्रमस्तिष्क","अनुमस्तिष्क","मेड्यूला ऑब्लोंगेटा","हाइपोथैलेमस"]},a:2,exp:"Medulla Oblongata controls breathing, heart rate, BP."},
+  {id:7,sub:"Physics",ch:"Thermodynamics",dif:"Hard",en:{q:"Which law states energy cannot be created or destroyed?",o:["Zeroth","First","Second","Third"]},hi:{q:"कौन सा नियम कहता है ऊर्जा न बनाई न नष्ट होती?",o:["शून्य नियम","प्रथम नियम","द्वितीय नियम","तृतीय नियम"]},a:1,exp:"First Law = Conservation of Energy. dU = Q - W."},
+  {id:8,sub:"Chemistry",ch:"Organic Chemistry",dif:"Medium",en:{q:"Functional group in alcohols?",o:["-COOH","-CHO","-OH","-NH2"]},hi:{q:"एल्कोहल में कार्यात्मक समूह?",o:["-COOH","-CHO","-OH","-NH2"]},a:2,exp:"-OH (hydroxyl) group defines alcohols."},
+  {id:9,sub:"Biology",ch:"Cell Biology",dif:"Easy",en:{q:"Cell membrane is made of?",o:["Proteins only","Lipid bilayer","Carbohydrates","DNA"]},hi:{q:"कोशिका झिल्ली किससे बनी होती है?",o:["केवल प्रोटीन","लिपिड द्विस्तर","कार्बोहाइड्रेट","DNA"]},a:1,exp:"Phospholipid bilayer with embedded proteins - fluid mosaic model."},
+  {id:10,sub:"Physics",ch:"Laws of Motion",dif:"Medium",en:{q:"A body at rest remains at rest unless acted on by?",o:["Gravity","External force","Friction","Inertia"]},hi:{q:"स्थिर वस्तु तब तक स्थिर रहती जब तक?",o:["गुरुत्वाकर्षण","बाह्य बल","घर्षण","जड़त्व"]},a:1,exp:"Newton's 1st Law: without net external force, objects maintain state."},
+  {id:11,sub:"Biology",ch:"Genetics",dif:"Medium",en:{q:"Who is the Father of Genetics?",o:["Darwin","Mendel","Watson","Morgan"]},hi:{q:"आनुवंशिकी का जनक?",o:["डार्विन","मेंडल","वाटसन","मॉर्गन"]},a:1,exp:"Gregor Mendel's pea plant experiments laid genetics foundation."},
+  {id:12,sub:"Chemistry",ch:"Periodic Table",dif:"Hard",en:{q:"Noble gases belong to which group?",o:["Group 1","Group 16","Group 17","Group 18"]},hi:{q:"नोबल गैस कौन से वर्ग में हैं?",o:["वर्ग 1","वर्ग 16","वर्ग 17","वर्ग 18"]},a:3,exp:"Group 18 = Noble gases. Full valence shells, low reactivity."}
 ];
 
-const SUBJECTS = [
-  {name:"Biology",  icon:"🧬",color:"#22c55e",chapters:["Cell Biology","Genetics","Human Physiology","Plant Physiology","Ecology","Evolution"]},
-  {name:"Physics",  icon:"⚛️", color:"#3b82f6",chapters:["Laws of Motion","Thermodynamics","Optics","Electrostatics","Magnetism","Modern Physics"]},
-  {name:"Chemistry",icon:"🧪", color:"#f59e0b",chapters:["Periodic Table","Chemical Bonding","Organic Chemistry","Thermodynamics","Electrochemistry","Equilibrium"]},
-];
+const SC={Biology:"#22c55e",Physics:"#3b82f6",Chemistry:"#f59e0b"};
 
-const SUBJ_COLOR = {Biology:"#22c55e",Physics:"#3b82f6",Chemistry:"#f59e0b"};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// STORAGE HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
-const store = {
-  async get(key) {
-    try { const r = await window.storage.get(key); return r ? JSON.parse(r.value) : null; }
-    catch { return null; }
-  },
-  async set(key, val) {
-    try { await window.storage.set(key, JSON.stringify(val)); } catch {}
-  },
+// STATE
+let ST={
+  screen:"login",lang:"en",student:null,history:[],
+  authMode:"login",authName:"",authPhone:"",authEmail:"",authPass:"",authErr:"",authLoading:false,
+  testQs:null,answers:{},marked:{},currentQ:0,timeLeft:0,testDone:false,qTimings:{},qStart:null,testName:"",
+  reviewMode:false,reviewIdx:0,
+  histN:10,selTest:null,
+  doubt:"",doubts:[],aiLoad:false,
+  adminTab:"upload",pastedQ:"",genTest:null,genLoad:false,
+  menuOpen:false,showPalette:false,timerInterval:null
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ICON
-// ─────────────────────────────────────────────────────────────────────────────
-const Icon = ({name,size=20}) => {
-  const P = {
-    home:"M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10",
-    test:"M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2 M9 5a2 2 0 002 2h2a2 2 0 002-2 M9 12h6 M9 16h4",
-    brain:"M9.5 2A2.5 2.5 0 0112 4.5v15a2.5 2.5 0 01-4.96-.44 2.5 2.5 0 01-2.96-3.08 3 3 0 01-.34-5.58 2.5 2.5 0 013.76-3.4zm5 0A2.5 2.5 0 0112 4.5v15a2.5 2.5 0 004.96-.44 2.5 2.5 0 002.96-3.08 3 3 0 00.34-5.58 2.5 2.5 0 00-3.76-3.4z",
-    chart:"M18 20V10 M12 20V4 M6 20v-6",
-    book:"M4 19.5A2.5 2.5 0 016.5 17H20 M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z",
-    clock:"M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M12 6v6l4 2",
-    send:"M22 2L11 13 M22 2l-7 20-4-9-9-4z",
-    menu:"M3 12h18 M3 6h18 M3 18h18",
-    trophy:"M18 2H6v7a6 6 0 0012 0V2z M6 9H4.5a2.5 2.5 0 010-5H6 M18 9h1.5a2.5 2.5 0 000-5H18 M4 22h16 M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22 M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22",
-    zap:"M13 2L3 14h9l-1 8 10-12h-9l1-8z",
-    flag:"M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z M4 22v-7",
-    chevL:"M15 18l-6-6 6-6", chevR:"M9 18l6-6-6-6",
-    eye:"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M12 12m-3 0a3 3 0 106 0 3 3 0 00-6 0",
-    user:"M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2 M12 11a4 4 0 100-8 4 4 0 000 8z",
-    logout:"M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4 M16 17l5-5-5-5 M21 12H9",
-    target:"M22 12A10 10 0 1112 2 M22 12a10 10 0 01-10 10 M15 12a3 3 0 11-6 0 3 3 0 016 0z",
-    settings:"M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z",
-    star:"M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z",
-    check:"M20 6L9 17l-5-5",
-    alert:"M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z M12 9v4 M12 17h.01",
-  };
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      {(P[name]||"").split(" M").map((d,i)=><path key={i} d={i===0?d:"M"+d}/>)}
-    </svg>
-  );
-};
+function ss(u){Object.assign(ST,u);render()}
 
-const fmtTime = s => {
-  if(s===undefined||s===null) return "–";
-  const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
-  if(h>0) return `${h}:${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
-  return `${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")}`;
-};
-const fmtSec = s => s<60?`${s}s`:`${Math.floor(s/60)}m ${s%60}s`;
-
-// ─────────────────────────────────────────────────────────────────────────────
-// MAIN APP
-// ─────────────────────────────────────────────────────────────────────────────
-export default function MedTest() {
-  const [student, setStudent] = useState(null);
-  const [authMode, setAuthMode] = useState("login");
-  const [authForm, setAuthForm] = useState({name:"",phone:"",email:"",password:""});
-  const [authErr, setAuthErr] = useState("");
-  const [authLoading, setAuthLoading] = useState(false);
-  const [screen, setScreen] = useState("home");
-  const [lang, setLang] = useState("en");
-  const [menuOpen, setMenuOpen] = useState(false);
-  // test
-  const [testQs, setTestQs] = useState(null);
-  const [answers, setAnswers] = useState({});
-  const [marked, setMarked] = useState({});
-  const [currentQ, setCurrentQ] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(0);
-  const [testDone, setTestDone] = useState(false);
-  const [showPalette, setShowPalette] = useState(false);
-  const [qTimings, setQTimings] = useState({});       // {qIdx: totalSecondsSpent}
-  const [qStart, setQStart] = useState(null);         // when current Q was shown
-  const timerRef = useRef(null);
-  // results
-  const [reviewMode, setReviewMode] = useState(false);
-  const [reviewIdx, setReviewIdx] = useState(0);
-  // analytics
-  const [history, setHistory] = useState([]);
-  const [histN, setHistN] = useState(10);
-  const [selTest, setSelTest] = useState(null);
-  // ai
-  const [doubt, setDoubt] = useState("");
-  const [doubts, setDoubts] = useState([]);
-  const [aiLoad, setAiLoad] = useState(false);
-  const [adaptLoad, setAdaptLoad] = useState(false);
-  const chatEnd = useRef(null);
-  // admin
-  const [adminTab, setAdminTab] = useState("upload");
-  const [pastedQ, setPastedQ] = useState("");
-  const [genTest, setGenTest] = useState(null);
-  const [genLoad, setGenLoad] = useState(false);
-
-  // Load student + history from storage on mount
-  useEffect(()=>{
-    (async()=>{
-      const s = await store.get("medtest:currentStudent");
-      if(s){ setStudent(s); loadHistory(s.email); }
-    })();
-  },[]);
-
-  useEffect(()=>{ if(chatEnd.current) chatEnd.current.scrollIntoView({behavior:"smooth"}); },[doubts]);
-
-  const loadHistory = async (email) => {
-    try {
-      const results = await sb.getResults(email);
-      if(results && results.length > 0) {
-        setHistory(results.map(r => ({
-          ...r, id:r.id, name:r.test_name||"Mock Test",
-          questions:r.questions||[], totalTime:r.total_time||0,
-        })));
-      } else {
-        const h = await store.get(`medtest:history:${email}`) || [];
-        setHistory(h);
-      }
-    } catch {
-      const h = await store.get(`medtest:history:${email}`) || [];
-      setHistory(h);
-    }
-  };
-
-  // ── AUTH ──────────────────────────────────────────────────────────────────
-  const handleAuth = async () => {
-    setAuthErr(""); setAuthLoading(true);
-    if(authMode==="register"){
-      if(!authForm.name.trim()){ setAuthErr("Please enter your full name."); setAuthLoading(false); return; }
-      if(!authForm.phone.trim()||authForm.phone.replace(/\D/g,"").length!==10){ setAuthErr("Please enter a valid 10-digit phone number."); setAuthLoading(false); return; }
-      if(!authForm.email.trim()||!authForm.email.includes("@")){ setAuthErr("Please enter a valid email address."); setAuthLoading(false); return; }
-      if(!authForm.password||authForm.password.length<6){ setAuthErr("Password must be at least 6 characters."); setAuthLoading(false); return; }
-      try {
-        const res = await sb.signUp(authForm.email.trim(), authForm.password);
-        if(res.error){ setAuthErr(res.error.message||"Registration failed."); setAuthLoading(false); return; }
-        const newStudent = {
-          name:authForm.name.trim(), phone:authForm.phone.replace(/\D/g,""),
-          email:authForm.email.trim().toLowerCase(),
-          joinDate:new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}),
-          emailVerified:false,
-        };
-        await sb.saveProfile({ email:newStudent.email, name:newStudent.name, phone:newStudent.phone, join_date:newStudent.joinDate });
-        await store.set("medtest:currentStudent", newStudent);
-        setStudent(newStudent); loadHistory(newStudent.email);
-      } catch(e){ setAuthErr("Registration failed. Please check your internet and try again."); }
-    } else {
-      if(!authForm.email||!authForm.password){ setAuthErr("Please enter email and password."); setAuthLoading(false); return; }
-      try {
-        const res = await sb.signIn(authForm.email.trim(), authForm.password);
-        if(res.error){ setAuthErr("Invalid email or password."); setAuthLoading(false); return; }
-        const profile = await sb.getProfile(authForm.email.trim().toLowerCase());
-        const s = profile ? {
-          name:profile.name, phone:profile.phone||"", email:profile.email,
-          joinDate:profile.join_date, emailVerified:true,
-        } : {
-          name:authForm.email.split("@")[0], phone:"",
-          email:authForm.email.trim().toLowerCase(),
-          joinDate:new Date().toLocaleDateString("en-IN"), emailVerified:true,
-        };
-        await store.set("medtest:currentStudent", s);
-        setStudent(s); loadHistory(s.email);
-      } catch(e){ setAuthErr("Login failed. Please try again."); }
-    }
-    setAuthLoading(false);
-  };
-
-  const logout = async () => {
-    await store.set("medtest:currentStudent", null);
-    setStudent(null); setHistory([]); setScreen("home");
-  };
-
-  // ── TEST ENGINE ───────────────────────────────────────────────────────────
-  const startTest = (qs, minutes, testName="Mock Test") => {
-    setAnswers({}); setMarked({}); setCurrentQ(0); setQTimings({});
-    setTestDone(false); setReviewMode(false); setTestQs(qs);
-    setTimeLeft(minutes*60); setQStart(Date.now()); setScreen("test");
-    setShowPalette(false);
-    // store test name for later
-    window._testName = testName;
-  };
-
-  // Count time for current question when navigating
-  const goToQ = useCallback((idx) => {
-    const elapsed = Math.round((Date.now() - (qStart||Date.now()))/1000);
-    setQTimings(t=>({ ...t, [currentQ]: (t[currentQ]||0) + elapsed }));
-    setCurrentQ(idx);
-    setQStart(Date.now());
-  }, [currentQ, qStart]);
-
-  useEffect(()=>{
-    if(testQs&&!testDone){
-      timerRef.current = setInterval(()=>{
-        setTimeLeft(t=>{
-          if(t<=1){ clearInterval(timerRef.current); finalizeTest(); return 0; }
-          return t-1;
-        });
-      },1000);
-    }
-    return ()=>clearInterval(timerRef.current);
-  },[testQs,testDone]);
-
-  const finalizeTest = () => {
-    // record last question's time
-    const elapsed = Math.round((Date.now()-(qStart||Date.now()))/1000);
-    setQTimings(t=>{ const n={...t,[currentQ]:(t[currentQ]||0)+elapsed}; saveResult(n); return n; });
-    setTestDone(true);
-  };
-
-  const submitTest = () => { clearInterval(timerRef.current); finalizeTest(); };
-
-  const saveResult = async (timings) => {
-    if(!student) return;
-    const result = {
-      id: Date.now(),
-      name: window._testName || "Mock Test",
-      date: new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}),
-      timestamp: Date.now(),
-      questions: (testQs||[]).map((q,i)=>({
-        qId:q.id, subject:q.subject, chapter:q.chapter, difficulty:q.difficulty,
-        answer:answers[i], correct:q.answer, isCorrect:answers[i]===q.answer,
-        isSkipped:answers[i]===undefined, timeSpent:timings[i]||0,
-      })),
-    };
-    result.score = result.questions.reduce((s,q)=>s+(q.isCorrect?4:q.isSkipped?0:-1),0);
-    result.correct = result.questions.filter(q=>q.isCorrect).length;
-    result.wrong = result.questions.filter(q=>!q.isCorrect&&!q.isSkipped).length;
-    result.skipped = result.questions.filter(q=>q.isSkipped).length;
-    result.totalTime = result.questions.reduce((s,q)=>s+q.timeSpent,0);
-
-    const existing = await store.get(`medtest:history:${student.email}`) || [];
-    const updated = [...existing, result];
-    await store.set(`medtest:history:${student.email}`, updated);
-    // Also save to Supabase permanently
-    await sb.saveResult({
-      student_email: student.email, test_name: result.name,
-      score: result.score, correct: result.correct,
-      wrong: result.wrong, skipped: result.skipped,
-      total_time: result.totalTime, questions: result.questions,
-      date: result.date
-    });
-    setHistory(updated);
-  };
-
-  const calcScore = () => {
-    let c=0,w=0;
-    (testQs||[]).forEach((q,i)=>{ if(answers[i]===undefined)return; answers[i]===q.answer?c++:w++; });
-    return {correct:c, wrong:w, skipped:(testQs?.length||0)-c-w, total:c*4-w};
-  };
-
-  // ── WEAK TOPIC ANALYSIS ───────────────────────────────────────────────────
-  const getWeakAnalysis = (hist) => {
-    // aggregate by chapter
-    const map = {};
-    hist.forEach(test=>{
-      test.questions.forEach(q=>{
-        const key = `${q.subject}|${q.chapter}`;
-        if(!map[key]) map[key]={subject:q.subject,chapter:q.chapter,total:0,wrong:0,correct:0,totalTime:0,count:0};
-        map[key].total++;
-        if(q.isCorrect) map[key].correct++;
-        else if(!q.isSkipped) map[key].wrong++;
-        map[key].totalTime+=q.timeSpent;
-        map[key].count++;
-      });
-    });
-    return Object.values(map).map(m=>({
-      ...m,
-      accuracy:m.total>0?Math.round((m.correct/m.total)*100):0,
-      avgTime:m.count>0?Math.round(m.totalTime/m.count):0,
-    })).sort((a,b)=>a.accuracy-b.accuracy);
-  };
-
-  const getTimeAnalysis = (hist) => {
-    const map = {};
-    hist.forEach(test=>{
-      test.questions.forEach(q=>{
-        const key=`${q.subject}|${q.chapter}`;
-        if(!map[key]) map[key]={subject:q.subject,chapter:q.chapter,totalTime:0,count:0};
-        map[key].totalTime+=q.timeSpent; map[key].count++;
-      });
-    });
-    return Object.values(map).map(m=>({...m,avgTime:Math.round(m.totalTime/m.count)})).sort((a,b)=>b.avgTime-a.avgTime);
-  };
-
-  // ── ADAPTIVE TEST ─────────────────────────────────────────────────────────
-  const generateAdaptiveTest = async () => {
-    setAdaptLoad(true);
-    const weak = getWeakAnalysis(history).filter(w=>w.accuracy<70);
-    if(weak.length===0){ setAdaptLoad(false); alert("Great! No weak topics found. Keep practicing!"); return; }
-    // filter questions from weak chapters
-    const weakChapters = new Set(weak.map(w=>w.chapter));
-    const filtered = QUESTIONS.filter(q=>weakChapters.has(q.chapter));
-    if(filtered.length>0){
-      startTest(filtered, filtered.length*2, "Adaptive Test — Weak Topics");
-    } else {
-      startTest(QUESTIONS.slice(0,8), 20, "Adaptive Test");
-    }
-    setAdaptLoad(false);
-  };
-
-  // ── AI ────────────────────────────────────────────────────────────────────
-  const askDoubt = async () => {
-    if(!doubt.trim()) return;
-    const q=doubt.trim(); setDoubt("");
-    setDoubts(d=>[...d,{role:"user",text:q}]); setAiLoad(true);
-    try {
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,
-          system:"You are MedTest AI — expert NEET tutor. Answer Physics, Chemistry, Biology doubts concisely (<150 words). Mention chapter and a quick memory tip.",
-          messages:[{role:"user",content:q}]})});
-      const data=await res.json();
-      const text=data.content?.map(c=>c.text||"").join("")||"Sorry, try again.";
-      setDoubts(d=>[...d,{role:"ai",text}]);
-    } catch { setDoubts(d=>[...d,{role:"ai",text:"Connection error. Try again."}]); }
-    setAiLoad(false);
-  };
-
-  // ── ADMIN ─────────────────────────────────────────────────────────────────
-  const convertQuestions = async () => {
-    if(!pastedQ.trim()) return;
-    setGenLoad(true);
-    try {
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,
-          system:`Convert questions to JSON array only (no markdown):
-[{"subject":"Biology","chapter":"Cell Biology","difficulty":"Medium","en":{"q":"...","options":["A","B","C","D"]},"hi":{"q":"...in Hindi","options":["Hindi A","Hindi B","Hindi C","Hindi D"]},"answer":0,"explanation":"..."}]
-answer is 0-indexed. Translate to Hindi. NCERT-based. Return ONLY the JSON array.`,
-          messages:[{role:"user",content:`Convert:\n\n${pastedQ}`}]})});
-      const data=await res.json();
-      const raw=data.content?.map(c=>c.text||"").join("")||"[]";
-      setGenTest(JSON.parse(raw.replace(/```json|```/g,"").trim()));
-    } catch { alert("Parse error. Check question format."); }
-    setGenLoad(false);
-  };
-
-  const nav = id => { setScreen(id); setMenuOpen(false); };
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // LOGIN SCREEN
-  // ─────────────────────────────────────────────────────────────────────────
-  if(!student) return (
-    <div style={{fontFamily:"'Georgia',serif",background:"#0a0f1e",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20,color:"#e8eaf0"}}>
-      <div style={{position:"fixed",inset:0,background:"radial-gradient(ellipse at 30% 40%,rgba(16,185,129,0.1),transparent 60%),radial-gradient(ellipse at 70% 70%,rgba(59,130,246,0.08),transparent 60%)",pointerEvents:"none"}}/>
-      <div style={{position:"relative",width:"100%",maxWidth:380}}>
-        <div style={{textAlign:"center",marginBottom:32}}>
-          <div style={{width:56,height:56,borderRadius:16,background:"linear-gradient(135deg,#10b981,#3b82f6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,margin:"0 auto 12px"}}>🩺</div>
-          <div style={{fontSize:26,fontWeight:700,color:"#fff",letterSpacing:1}}>MedTest</div>
-          <div style={{fontSize:11,color:"#6ee7b7",letterSpacing:3,marginTop:2}}>NEET PREPARATION PLATFORM</div>
-        </div>
-
-        <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:20,padding:24}}>
-          <div style={{display:"flex",background:"rgba(255,255,255,0.04)",borderRadius:12,padding:3,marginBottom:22}}>
-            {["login","register"].map(m=>(
-              <button key={m} onClick={()=>{setAuthMode(m);setAuthErr("");}} style={{flex:1,background:authMode===m?"rgba(16,185,129,0.2)":"none",border:`1px solid ${authMode===m?"#10b981":"transparent"}`,borderRadius:9,padding:"9px",color:authMode===m?"#10b981":"#64748b",cursor:"pointer",fontSize:13,fontFamily:"inherit",fontWeight:authMode===m?700:400,textTransform:"capitalize"}}>
-                {m==="login"?"Login":"Register"}
-              </button>
-            ))}
-          </div>
-
-          {authMode==="register"&&(
-            <div style={{marginBottom:14}}>
-              <div style={{fontSize:11,color:"#94a3b8",marginBottom:5}}>FULL NAME</div>
-              <input value={authForm.name} onChange={e=>setAuthForm(f=>({...f,name:e.target.value}))} placeholder="Your full name" style={{width:"100%",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"11px 14px",color:"#e8eaf0",fontSize:13,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
-            </div>
-          )}
-          {authMode==="register"&&(
-            <div style={{marginBottom:14}}>
-              <div style={{fontSize:11,color:"#94a3b8",marginBottom:5}}>PHONE NUMBER</div>
-              <div style={{position:"relative"}}>
-                <div style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",fontSize:13,color:"#6ee7b7",fontWeight:600,pointerEvents:"none"}}>+91</div>
-                <input value={authForm.phone} onChange={e=>setAuthForm(f=>({...f,phone:e.target.value.replace(/\D/g,"").slice(0,10)}))} placeholder="10-digit mobile number" type="tel" maxLength={10} style={{width:"100%",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"11px 14px 11px 46px",color:"#e8eaf0",fontSize:13,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
-              </div>
-              <div style={{fontSize:10,color:"#475569",marginTop:4}}>Used for future WhatsApp reminders</div>
-            </div>
-          )}
-          <div style={{marginBottom:14}}>
-            <div style={{fontSize:11,color:"#94a3b8",marginBottom:5}}>EMAIL ADDRESS</div>
-            <input value={authForm.email} onChange={e=>setAuthForm(f=>({...f,email:e.target.value}))} placeholder="student@email.com" type="email" style={{width:"100%",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"11px 14px",color:"#e8eaf0",fontSize:13,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
-          </div>
-          <div style={{marginBottom:authMode==="register"?14:20}}>
-            <div style={{fontSize:11,color:"#94a3b8",marginBottom:5}}>PASSWORD {authMode==="register"&&<span style={{color:"#475569"}}>(min 6 characters)</span>}</div>
-            <input value={authForm.password} onChange={e=>setAuthForm(f=>({...f,password:e.target.value}))} onKeyDown={e=>e.key==="Enter"&&handleAuth()} placeholder={authMode==="register"?"Create a password":"Enter your password"} type="password" style={{width:"100%",background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"11px 14px",color:"#e8eaf0",fontSize:13,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
-          </div>
-          {authMode==="register"&&(
-            <div style={{background:"rgba(16,185,129,0.07)",border:"1px solid rgba(16,185,129,0.15)",borderRadius:9,padding:"9px 12px",marginBottom:16,fontSize:10,color:"#6ee7b7",lineHeight:1.6}}>
-              🔒 Your data is private and secure. OTP verification will be added soon.
-            </div>
-          )}
-          {authErr&&<div style={{background:authErr.startsWith("✅")?"rgba(16,185,129,0.1)":"rgba(239,68,68,0.1)",border:`1px solid ${authErr.startsWith("✅")?"rgba(16,185,129,0.3)":"rgba(239,68,68,0.3)"}`,borderRadius:8,padding:"8px 12px",color:authErr.startsWith("✅")?"#6ee7b7":"#f87171",fontSize:12,marginBottom:14}}>{authErr}</div>}
-          <button onClick={handleAuth} disabled={authLoading} style={{width:"100%",background:authLoading?"rgba(255,255,255,0.1)":"linear-gradient(135deg,#10b981,#059669)",border:"none",borderRadius:12,padding:"13px",color:"#fff",fontSize:15,fontWeight:700,cursor:authLoading?"default":"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-            {authLoading?<><div style={{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>{authMode==="login"?"Logging in...":"Creating account..."}</>:authMode==="login"?"Login to MedTest":"Create Account"}
-          </button>
-        </div>
-
-        <div style={{textAlign:"center",marginTop:16,fontSize:11,color:"#475569"}}>
-          MedTest — Your NEET preparation partner
-        </div>
-      </div>
-    </div>
-  );
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // LOGGED IN APP
-  // ─────────────────────────────────────────────────────────────────────────
-  const navItems = [
-    {id:"home",label:"Home",icon:"home"},{id:"mock",label:"Tests",icon:"test"},
-    {id:"ai",label:"AI Tutor",icon:"brain"},{id:"analytics",label:"Analysis",icon:"chart"},
-    {id:"admin",label:"Admin",icon:"settings"},
-  ];
-
-  const weakTopics = getWeakAnalysis(history);
-  const timeTopics = getTimeAnalysis(history);
-  const recentTests = [...history].reverse().slice(0, histN);
-
-  return (
-    <div style={{fontFamily:"'Georgia',serif",background:"#0a0f1e",minHeight:"100vh",color:"#e8eaf0"}}>
-      <div style={{position:"fixed",inset:0,background:"radial-gradient(ellipse at 20% 50%,rgba(16,185,129,0.07),transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(59,130,246,0.07),transparent 60%)",pointerEvents:"none",zIndex:0}}/>
-
-      {/* Header */}
-      <header style={{position:"fixed",top:0,left:0,right:0,zIndex:100,background:"rgba(10,15,30,0.97)",backdropFilter:"blur(12px)",borderBottom:"1px solid rgba(255,255,255,0.07)",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 14px",height:54}}>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <div style={{width:30,height:30,borderRadius:8,background:"linear-gradient(135deg,#10b981,#3b82f6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>🩺</div>
-          <div>
-            <div style={{fontSize:15,fontWeight:700,color:"#fff",letterSpacing:0.5}}>MedTest</div>
-            <div style={{fontSize:8,color:"#6ee7b7",letterSpacing:2,marginTop:-2}}>NEET PREP</div>
-          </div>
-        </div>
-        <div style={{display:"flex",gap:7,alignItems:"center"}}>
-          <button onClick={()=>setLang(l=>l==="en"?"hi":"en")} style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:16,padding:"3px 9px",color:"#e8eaf0",fontSize:10,cursor:"pointer",fontFamily:"inherit"}}>
-            {lang==="en"?"🇮🇳 हिंदी":"🇬🇧 Eng"}
-          </button>
-          <div style={{display:"flex",alignItems:"center",gap:5,background:"rgba(16,185,129,0.1)",border:"1px solid rgba(16,185,129,0.2)",borderRadius:16,padding:"3px 9px"}}>
-            <Icon name="user" size={12}/><span style={{fontSize:10,color:"#6ee7b7"}}>{student.name.split(" ")[0]}</span>
-            {student.phone&&<span style={{fontSize:9,color:"#475569",borderLeft:"1px solid rgba(255,255,255,0.1)",paddingLeft:5}}>📱{student.phone.slice(-4)}</span>}
-            {student.emailVerified?<span style={{fontSize:9,color:"#10b981"}}>✓</span>:<span style={{fontSize:9,color:"#f59e0b"}} title="Email not verified">⚠</span>}
-          </div>
-          <button onClick={()=>setMenuOpen(m=>!m)} style={{background:"none",border:"none",color:"#94a3b8",cursor:"pointer",padding:3}}><Icon name="menu" size={20}/></button>
-        </div>
-      </header>
-
-      {/* Side Menu */}
-      {menuOpen&&<div style={{position:"fixed",inset:0,zIndex:200,display:"flex"}}>
-        <div style={{flex:1,background:"rgba(0,0,0,0.6)"}} onClick={()=>setMenuOpen(false)}/>
-        <div style={{width:210,background:"#0d1327",borderLeft:"1px solid rgba(255,255,255,0.08)",padding:"60px 0 20px",display:"flex",flexDirection:"column",gap:2}}>
-          <div style={{padding:"0 16px 14px",borderBottom:"1px solid rgba(255,255,255,0.07)",marginBottom:6}}>
-            <div style={{fontSize:13,fontWeight:700,color:"#fff",marginBottom:2}}>{student.name}</div>
-            <div style={{fontSize:10,color:"#6ee7b7",marginBottom:1}}>📧 {student.email}</div>
-            {student.phone&&<div style={{fontSize:10,color:"#6ee7b7"}}>📱 +91 {student.phone}</div>}
-            <div style={{fontSize:9,color:"#475569",marginTop:3}}>Joined {student.joinDate}</div>
-          </div>
-            <button key={n.id} onClick={()=>nav(n.id)} style={{display:"flex",alignItems:"center",gap:11,padding:"11px 18px",background:screen===n.id?"rgba(16,185,129,0.15)":"none",border:"none",color:screen===n.id?"#10b981":"#94a3b8",cursor:"pointer",fontSize:12,fontFamily:"inherit",borderLeft:screen===n.id?"3px solid #10b981":"3px solid transparent",textAlign:"left"}}>
-              <Icon name={n.icon} size={15}/>{n.label}
-            </button>
-          ))}
-          <div style={{margin:"16px 18px 0",borderTop:"1px solid rgba(255,255,255,0.07)",paddingTop:16}}>
-            <button onClick={logout} style={{display:"flex",alignItems:"center",gap:10,background:"none",border:"none",color:"#ef4444",cursor:"pointer",fontSize:12,fontFamily:"inherit"}}>
-              <Icon name="logout" size={14}/>Logout
-            </button>
-          </div>
-        </div>
-      </div>}
-
-      {/* Bottom Nav */}
-      <nav style={{position:"fixed",bottom:0,left:0,right:0,zIndex:100,background:"rgba(10,15,30,0.97)",borderTop:"1px solid rgba(255,255,255,0.07)",display:"flex",justifyContent:"space-around",padding:"5px 0 9px"}}>
-        {navItems.map(n=>(
-          <button key={n.id} onClick={()=>nav(n.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,background:"none",border:"none",color:screen===n.id?"#10b981":"#475569",cursor:"pointer",fontSize:8,fontFamily:"inherit",letterSpacing:0.5}}>
-            <div style={{padding:"3px 10px",borderRadius:9,background:screen===n.id?"rgba(16,185,129,0.15)":"none"}}><Icon name={n.icon} size={15}/></div>
-            {n.label}
-          </button>
-        ))}
-      </nav>
-
-      {/* MAIN */}
-      <main style={{paddingTop:62,paddingBottom:72,minHeight:"100vh",position:"relative",zIndex:1,overflowY:"auto",maxHeight:"100vh"}}>
-
-        {/* ══════════ HOME ══════════ */}
-        {screen==="home"&&(
-          <div style={{padding:"16px 14px"}}>
-            <div style={{marginBottom:18}}>
-              <div style={{fontSize:11,color:"#6ee7b7",letterSpacing:2,marginBottom:2}}>WELCOME BACK</div>
-              <div style={{fontSize:22,fontWeight:700,color:"#fff",lineHeight:1.2}}>Hi, {student.name.split(" ")[0]} 👋<br/><span style={{color:"#10b981",fontSize:18}}>Ready to crack NEET?</span></div>
-            </div>
-
-            {/* Stats */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9,marginBottom:18}}>
-              {[
-                {label:"Tests Done",value:history.length,icon:"test",c:"#3b82f6"},
-                {label:"Best Score",value:history.length?Math.max(...history.map(h=>h.score)):"-",icon:"trophy",c:"#f59e0b"},
-                {label:"Avg Score",value:history.length?Math.round(history.reduce((s,h)=>s+h.score,0)/history.length):"-",icon:"chart",c:"#10b981"},
-                {label:"Weak Topics",value:weakTopics.filter(w=>w.accuracy<70).length,icon:"alert",c:"#ef4444"},
-              ].map(s=>(
-                <div key={s.label} style={{background:"rgba(255,255,255,0.04)",border:`1px solid ${s.c}22`,borderRadius:11,padding:"12px 11px",display:"flex",alignItems:"center",gap:9}}>
-                  <div style={{width:34,height:34,borderRadius:9,background:s.c+"20",display:"flex",alignItems:"center",justifyContent:"center",color:s.c,flexShrink:0}}><Icon name={s.icon} size={15}/></div>
-                  <div><div style={{fontSize:18,fontWeight:700,color:"#fff"}}>{s.value}</div><div style={{fontSize:9,color:"#64748b",marginTop:1}}>{s.label}</div></div>
-                </div>
-              ))}
-            </div>
-
-            {/* Weak topics alert */}
-            {weakTopics.filter(w=>w.accuracy<70).length>0&&(
-              <div style={{background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)",borderRadius:12,padding:"12px 14px",marginBottom:14}}>
-                <div style={{fontSize:12,color:"#f87171",fontWeight:600,marginBottom:8}}>⚠️ Needs Attention</div>
-                {weakTopics.filter(w=>w.accuracy<70).slice(0,3).map(w=>(
-                  <div key={w.chapter} style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
-                    <span style={{fontSize:11,color:"#fca5a5"}}>{w.chapter} ({w.subject})</span>
-                    <span style={{fontSize:11,color:"#ef4444",fontWeight:600}}>{w.accuracy}%</span>
-                  </div>
-                ))}
-                <button onClick={generateAdaptiveTest} disabled={adaptLoad} style={{width:"100%",background:"rgba(239,68,68,0.2)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:9,padding:"9px",color:"#f87171",fontSize:12,cursor:"pointer",marginTop:8,fontWeight:600,fontFamily:"inherit"}}>
-                  {adaptLoad?"Generating...":"🎯 Start Adaptive Test for Weak Topics"}
-                </button>
-              </div>
-            )}
-
-            {/* Quick actions */}
-            <div style={{display:"flex",flexDirection:"column",gap:9}}>
-              <button onClick={()=>startTest(QUESTIONS,200,"Full Mock Test")} style={{background:"linear-gradient(135deg,#10b981,#059669)",border:"none",borderRadius:13,padding:"14px 16px",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",gap:11,textAlign:"left"}}>
-                <div style={{fontSize:24}}>📝</div>
-                <div><div style={{fontSize:14,fontWeight:700}}>Full Mock Test</div><div style={{fontSize:10,opacity:0.8,marginTop:1}}>{QUESTIONS.length} Questions · 3:20:00 · 720 Marks</div></div>
-              </button>
-              <button onClick={()=>nav("mock")} style={{background:"rgba(59,130,246,0.13)",border:"1px solid rgba(59,130,246,0.25)",borderRadius:13,padding:"14px 16px",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",gap:11,textAlign:"left"}}>
-                <div style={{fontSize:24}}>📚</div>
-                <div><div style={{fontSize:14,fontWeight:700}}>Chapter Practice</div><div style={{fontSize:10,opacity:0.6,marginTop:1}}>Focus on specific topics</div></div>
-              </button>
-              <button onClick={()=>nav("ai")} style={{background:"rgba(139,92,246,0.13)",border:"1px solid rgba(139,92,246,0.25)",borderRadius:13,padding:"14px 16px",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",gap:11,textAlign:"left"}}>
-                <div style={{fontSize:24}}>🤖</div>
-                <div><div style={{fontSize:14,fontWeight:700}}>AI Doubt Solver</div><div style={{fontSize:10,opacity:0.6,marginTop:1}}>Get instant answers</div></div>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ══════════ TEST SELECTION ══════════ */}
-        {screen==="mock"&&(
-          <div style={{padding:"16px 14px"}}>
-            <div style={{fontSize:20,fontWeight:700,color:"#fff",marginBottom:16}}>Choose Test</div>
-            {[
-              {title:"Full Mock Test",desc:`${QUESTIONS.length} Q · 3 hrs 20 min`,emoji:"📋",mins:200,qs:QUESTIONS,c:"#10b981"},
-              {title:"Biology Only",desc:"4 Q · 10 min (demo)",emoji:"🧬",mins:10,qs:QUESTIONS.filter(q=>q.subject==="Biology"),c:"#22c55e"},
-              {title:"Physics Only",desc:"4 Q · 10 min (demo)",emoji:"⚛️",mins:10,qs:QUESTIONS.filter(q=>q.subject==="Physics"),c:"#3b82f6"},
-              {title:"Chemistry Only",desc:"4 Q · 10 min (demo)",emoji:"🧪",mins:10,qs:QUESTIONS.filter(q=>q.subject==="Chemistry"),c:"#f59e0b"},
-            ].map(t=>(
-              <button key={t.title} onClick={()=>startTest(t.qs,t.mins,t.title)} style={{width:"100%",background:"rgba(255,255,255,0.04)",border:`1px solid ${t.c}33`,borderRadius:13,padding:"15px 14px",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",gap:12,textAlign:"left",marginBottom:9}}>
-                <div style={{fontSize:26}}>{t.emoji}</div>
-                <div><div style={{fontSize:14,fontWeight:600}}>{t.title}</div><div style={{fontSize:10,color:"#64748b",marginTop:2}}>{t.desc}</div></div>
-                <div style={{marginLeft:"auto",background:t.c+"22",color:t.c,borderRadius:7,padding:"5px 11px",fontSize:10,fontWeight:600}}>Start</div>
-              </button>
-            ))}
-            {weakTopics.filter(w=>w.accuracy<70).length>0&&(
-              <button onClick={generateAdaptiveTest} style={{width:"100%",background:"rgba(245,158,11,0.12)",border:"1px solid rgba(245,158,11,0.3)",borderRadius:13,padding:"15px 14px",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",gap:12,textAlign:"left"}}>
-                <div style={{fontSize:26}}>🎯</div>
-                <div><div style={{fontSize:14,fontWeight:600}}>Adaptive Test</div><div style={{fontSize:10,color:"#64748b",marginTop:2}}>AI-generated from your weak topics</div></div>
-                <div style={{marginLeft:"auto",background:"rgba(245,158,11,0.22)",color:"#f59e0b",borderRadius:7,padding:"5px 11px",fontSize:10,fontWeight:600}}>Smart</div>
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* ══════════ TEST TAKING ══════════ */}
-        {screen==="test"&&testQs&&!testDone&&(()=>{
-          const q=testQs[currentQ], total=testQs.length, attempted=Object.keys(answers).length;
-          const qSt = (i) => marked[i]?"review":answers[i]!==undefined?"answered":"none";
-          return (
-            <div style={{padding:"8px 12px"}}>
-              {/* Timer row */}
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"rgba(255,255,255,0.05)",borderRadius:11,padding:"8px 12px",marginBottom:10}}>
-                <div style={{display:"flex",alignItems:"center",gap:6,fontWeight:700,fontSize:18,fontVariantNumeric:"tabular-nums",color:timeLeft<600?"#ef4444":timeLeft<1800?"#f59e0b":"#10b981"}}>
-                  <Icon name="clock" size={15}/>{fmtTime(timeLeft)}
-                </div>
-                <div style={{display:"flex",gap:8,fontSize:10,color:"#64748b"}}>
-                  <span style={{color:"#10b981"}}>✓{attempted}</span>
-                  <span style={{color:"#f59e0b"}}>🚩{Object.keys(marked).length}</span>
-                  <span>/{total}</span>
-                </div>
-                <button onClick={submitTest} style={{background:"#10b981",border:"none",borderRadius:7,padding:"6px 13px",color:"#fff",fontSize:11,cursor:"pointer",fontWeight:600}}>Submit</button>
-              </div>
-              {/* Progress */}
-              <div style={{height:3,background:"rgba(255,255,255,0.06)",borderRadius:3,marginBottom:11,overflow:"hidden"}}>
-                <div style={{height:"100%",width:`${(attempted/total)*100}%`,background:"linear-gradient(90deg,#10b981,#3b82f6)",borderRadius:3,transition:"width 0.3s"}}/>
-              </div>
-              {/* Palette toggle */}
-              <button onClick={()=>setShowPalette(p=>!p)} style={{width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.09)",borderRadius:9,padding:"7px 12px",color:"#94a3b8",fontSize:10,cursor:"pointer",marginBottom:10,display:"flex",justifyContent:"space-between"}}>
-                <span>📊 Q{currentQ+1}/{total} — tap to see all questions</span><span>{showPalette?"▲":"▼"}</span>
-              </button>
-              {/* Palette */}
-              {showPalette&&(
-                <div style={{background:"rgba(0,0,0,0.45)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:11,padding:10,marginBottom:10}}>
-                  <div style={{display:"flex",gap:10,flexWrap:"wrap",fontSize:9,color:"#64748b",marginBottom:8}}>
-                    <span><span style={{display:"inline-block",width:8,height:8,borderRadius:2,background:"#10b981",marginRight:3}}/>Answered</span>
-                    <span><span style={{display:"inline-block",width:8,height:8,borderRadius:2,background:"#f59e0b",marginRight:3}}/>Marked</span>
-                    <span><span style={{display:"inline-block",width:8,height:8,borderRadius:2,background:"rgba(255,255,255,0.1)",marginRight:3}}/>Not done</span>
-                  </div>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(8,1fr)",gap:4}}>
-                    {testQs.map((_,i)=>{
-                      const st=qSt(i);
-                      return <button key={i} onClick={()=>{goToQ(i);setShowPalette(false);}} style={{height:28,borderRadius:5,background:st==="answered"?"#10b981":st==="review"?"#f59e0b":"rgba(255,255,255,0.07)",border:i===currentQ?"2px solid #fff":"1px solid transparent",color:"#fff",fontSize:9,fontWeight:600,cursor:"pointer"}}>{i+1}</button>;
-                    })}
-                  </div>
-                </div>
-              )}
-              {/* Question Card */}
-              <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:14,marginBottom:10}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:9}}>
-                  <div style={{display:"flex",gap:6}}>
-                    <span style={{fontSize:9,background:SUBJ_COLOR[q.subject]+"22",color:SUBJ_COLOR[q.subject],padding:"2px 7px",borderRadius:10}}>{q.subject}</span>
-                    <span style={{fontSize:9,background:"rgba(255,255,255,0.06)",color:"#94a3b8",padding:"2px 7px",borderRadius:10}}>{q.chapter}</span>
-                  </div>
-                  <span style={{fontSize:10,color:"#475569"}}>{q.difficulty}</span>
-                </div>
-                <p style={{fontSize:13,lineHeight:1.65,color:"#e2e8f0",marginBottom:13}}>{q[lang].q}</p>
-                {q[lang].options.map((opt,oi)=>(
-                  <button key={oi} onClick={()=>setAnswers(a=>({...a,[currentQ]:oi}))} style={{width:"100%",background:answers[currentQ]===oi?"rgba(16,185,129,0.18)":"rgba(255,255,255,0.04)",border:`1px solid ${answers[currentQ]===oi?"#10b981":"rgba(255,255,255,0.09)"}`,borderRadius:9,padding:"10px 12px",color:answers[currentQ]===oi?"#10b981":"#cbd5e1",cursor:"pointer",fontSize:12,textAlign:"left",display:"flex",alignItems:"center",gap:9,marginBottom:6,transition:"all 0.15s"}}>
-                    <span style={{width:20,height:20,borderRadius:"50%",background:answers[currentQ]===oi?"#10b981":"rgba(255,255,255,0.08)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,flexShrink:0}}>{["A","B","C","D"][oi]}</span>
-                    {opt}
-                  </button>
-                ))}
-              </div>
-              {/* Nav buttons */}
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7}}>
-                <button onClick={()=>goToQ(Math.max(0,currentQ-1))} disabled={currentQ===0} style={{background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:9,padding:"10px 6px",color:currentQ===0?"#374151":"#e2e8f0",cursor:currentQ===0?"default":"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-                  <Icon name="chevL" size={13}/>Prev
-                </button>
-                <button onClick={()=>setMarked(m=>({...m,[currentQ]:!m[currentQ]}))} style={{background:marked[currentQ]?"rgba(245,158,11,0.18)":"rgba(255,255,255,0.05)",border:`1px solid ${marked[currentQ]?"#f59e0b":"rgba(255,255,255,0.09)"}`,borderRadius:9,padding:"10px 6px",color:marked[currentQ]?"#f59e0b":"#94a3b8",cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-                  <Icon name="flag" size={12}/>{marked[currentQ]?"Marked":"Mark"}
-                </button>
-                <button onClick={()=>goToQ(Math.min(total-1,currentQ+1))} disabled={currentQ===total-1} style={{background:currentQ===total-1?"rgba(255,255,255,0.03)":"rgba(16,185,129,0.13)",border:`1px solid ${currentQ===total-1?"rgba(255,255,255,0.08)":"rgba(16,185,129,0.35)"}`,borderRadius:9,padding:"10px 6px",color:currentQ===total-1?"#374151":"#10b981",cursor:currentQ===total-1?"default":"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-                  Next<Icon name="chevR" size={13}/>
-                </button>
-              </div>
-              {answers[currentQ]!==undefined&&(
-                <button onClick={()=>setAnswers(a=>{const n={...a};delete n[currentQ];return n;})} style={{width:"100%",background:"rgba(239,68,68,0.07)",border:"1px solid rgba(239,68,68,0.18)",borderRadius:9,padding:"7px",color:"#f87171",fontSize:11,cursor:"pointer",marginTop:7}}>Clear Answer</button>
-              )}
-            </div>
-          );
-        })()}
-
-        {/* ══════════ RESULT ══════════ */}
-        {screen==="test"&&testDone&&testQs&&(()=>{
-          const {correct,wrong,skipped,total}=calcScore();
-          const pct=Math.round((Math.max(0,total)/(testQs.length*4))*100);
-          const lastResult = history[history.length-1];
-          const timings = lastResult?.questions || [];
-
-          return (
-            <div style={{padding:"16px 14px"}}>
-              {!reviewMode?(
-                <>
-                  <div style={{textAlign:"center",marginBottom:20}}>
-                    <div style={{fontSize:46,marginBottom:5}}>{pct>=60?"🎉":pct>=40?"👍":"💪"}</div>
-                    <div style={{fontSize:10,color:"#6ee7b7",letterSpacing:2}}>TEST COMPLETE</div>
-                    <div style={{fontSize:42,fontWeight:700,color:"#fff",margin:"4px 0"}}>{Math.max(0,total)}</div>
-                    <div style={{fontSize:12,color:"#64748b"}}>out of {testQs.length*4} marks</div>
-                  </div>
-
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:9,marginBottom:16}}>
-                    {[{l:"Correct",v:correct,c:"#10b981"},{l:"Wrong",v:wrong,c:"#ef4444"},{l:"Skipped",v:skipped,c:"#f59e0b"}].map(s=>(
-                      <div key={s.l} style={{background:s.c+"12",border:`1px solid ${s.c}33`,borderRadius:11,padding:"12px 6px",textAlign:"center"}}>
-                        <div style={{fontSize:22,fontWeight:700,color:s.c}}>{s.v}</div>
-                        <div style={{fontSize:9,color:"#64748b",marginTop:2}}>{s.l}</div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* TIME BREAKDOWN — new feature */}
-                  <div style={{background:"rgba(59,130,246,0.07)",border:"1px solid rgba(59,130,246,0.2)",borderRadius:13,padding:14,marginBottom:12}}>
-                    <div style={{fontSize:12,color:"#60a5fa",fontWeight:600,marginBottom:10}}>⏱️ Time Per Question</div>
-                    <div style={{display:"flex",alignItems:"flex-end",gap:3,height:70,marginBottom:8}}>
-                      {timings.map((q,i)=>{
-                        const maxT=Math.max(...timings.map(t=>t.timeSpent),1);
-                        const h=Math.max(4,(q.timeSpent/maxT)*100);
-                        const color=q.isCorrect?"#10b981":q.isSkipped?"#475569":"#ef4444";
-                        return (
-                          <div key={i} title={`Q${i+1}: ${fmtSec(q.timeSpent)}`} style={{flex:1,height:`${h}%`,borderRadius:"2px 2px 0 0",background:color,opacity:0.85,cursor:"default",minHeight:3}}/>
-                        );
-                      })}
-                    </div>
-                    <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:"#475569",marginBottom:6}}>
-                      <span>Q1</span><span>Q{timings.length}</span>
-                    </div>
-                    <div style={{display:"flex",gap:10,fontSize:9,color:"#64748b"}}>
-                      <span style={{color:"#10b981"}}>■ Correct</span><span style={{color:"#ef4444"}}>■ Wrong</span><span style={{color:"#475569"}}>■ Skipped</span>
-                    </div>
-                    {/* Top slow questions */}
-                    {timings.length>0&&(()=>{
-                      const sorted=[...timings].sort((a,b)=>b.timeSpent-a.timeSpent).slice(0,3);
-                      return (
-                        <div style={{marginTop:10}}>
-                          <div style={{fontSize:10,color:"#94a3b8",marginBottom:6}}>SLOWEST QUESTIONS</div>
-                          {sorted.map((q,i)=>(
-                            <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
-                              <span style={{fontSize:11,color:"#94a3b8"}}>{q.chapter} — Q (idx:{timings.indexOf(q)+1})</span>
-                              <span style={{fontSize:11,color:q.timeSpent>60?"#ef4444":"#f59e0b",fontWeight:600}}>{fmtSec(q.timeSpent)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })()}
-                  </div>
-
-                  <button onClick={()=>{setReviewMode(true);setReviewIdx(0);}} style={{width:"100%",background:"rgba(59,130,246,0.13)",border:"1px solid rgba(59,130,246,0.25)",borderRadius:11,padding:"12px",color:"#60a5fa",fontSize:13,cursor:"pointer",fontWeight:600,marginBottom:9,display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
-                    <Icon name="eye" size={15}/>Review All Questions
-                  </button>
-                  <button onClick={()=>nav("analytics")} style={{width:"100%",background:"rgba(16,185,129,0.13)",border:"1px solid rgba(16,185,129,0.25)",borderRadius:11,padding:"12px",color:"#10b981",fontSize:13,cursor:"pointer",fontWeight:600,marginBottom:9,display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
-                    <Icon name="chart" size={15}/>View Full Analysis
-                  </button>
-                  <button onClick={()=>startTest(QUESTIONS,200,"Full Mock Test")} style={{width:"100%",background:"linear-gradient(135deg,#10b981,#059669)",border:"none",borderRadius:11,padding:"12px",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>
-                    Retake Test
-                  </button>
-                </>
-              ):(()=>{
-                const rq=testQs[reviewIdx];
-                const ans=answers[reviewIdx];
-                const isCorrect=ans===rq.answer, isSkipped=ans===undefined;
-                const timing=lastResult?.questions[reviewIdx];
-                return (
-                  <div>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                      <button onClick={()=>setReviewMode(false)} style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:7,padding:"6px 11px",color:"#94a3b8",fontSize:11,cursor:"pointer"}}>← Results</button>
-                      <span style={{fontSize:12,color:"#64748b"}}>Q{reviewIdx+1}/{testQs.length}</span>
-                      <span style={{fontSize:11,color:isSkipped?"#f59e0b":isCorrect?"#10b981":"#ef4444",fontWeight:600}}>{isSkipped?"SKIPPED":isCorrect?"✓ CORRECT":"✗ WRONG"}</span>
-                    </div>
-                    {/* Time spent badge */}
-                    {timing&&<div style={{background:"rgba(59,130,246,0.1)",border:"1px solid rgba(59,130,246,0.2)",borderRadius:8,padding:"6px 12px",marginBottom:10,display:"flex",justifyContent:"space-between",fontSize:11}}>
-                      <span style={{color:"#60a5fa"}}>⏱ Time spent on this question</span>
-                      <span style={{color:timing.timeSpent>60?"#ef4444":timing.timeSpent>30?"#f59e0b":"#10b981",fontWeight:700}}>{fmtSec(timing.timeSpent)}</span>
-                    </div>}
-                    <div style={{background:"rgba(255,255,255,0.04)",border:`1px solid ${isSkipped?"rgba(255,255,255,0.08)":isCorrect?"rgba(16,185,129,0.3)":"rgba(239,68,68,0.3)"}`,borderRadius:13,padding:14,marginBottom:10}}>
-                      <div style={{display:"flex",gap:6,marginBottom:9}}>
-                        <span style={{fontSize:9,background:SUBJ_COLOR[rq.subject]+"22",color:SUBJ_COLOR[rq.subject],padding:"2px 7px",borderRadius:10}}>{rq.subject}</span>
-                        <span style={{fontSize:9,color:"#64748b",background:"rgba(255,255,255,0.06)",padding:"2px 7px",borderRadius:10}}>{rq.chapter}</span>
-                      </div>
-                      <p style={{fontSize:13,lineHeight:1.65,color:"#e2e8f0",marginBottom:12}}>{rq[lang].q}</p>
-                      {rq[lang].options.map((opt,oi)=>{
-                        const isAns=oi===rq.answer, isUser=oi===ans;
-                        let bg="rgba(255,255,255,0.04)",border="rgba(255,255,255,0.08)",col="#94a3b8";
-                        if(isAns){bg="rgba(16,185,129,0.15)";border="#10b981";col="#10b981";}
-                        if(isUser&&!isAns){bg="rgba(239,68,68,0.15)";border="#ef4444";col="#ef4444";}
-                        return <div key={oi} style={{background:bg,border:`1px solid ${border}`,borderRadius:8,padding:"9px 11px",marginBottom:5,fontSize:12,color:col,display:"flex",alignItems:"center",gap:8}}><span style={{width:18,height:18,borderRadius:"50%",background:isAns?"#10b981":isUser?"#ef4444":"rgba(255,255,255,0.08)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff",flexShrink:0}}>{["A","B","C","D"][oi]}</span>{opt}{isAns&&" ✓"}{isUser&&!isAns&&" ✗"}</div>;
-                      })}
-                    </div>
-                    <div style={{background:"rgba(16,185,129,0.06)",border:"1px solid rgba(16,185,129,0.18)",borderRadius:11,padding:"10px 12px",marginBottom:12}}>
-                      <div style={{fontSize:10,color:"#6ee7b7",marginBottom:4,fontWeight:600}}>💡 EXPLANATION</div>
-                      <p style={{fontSize:12,color:"#94a3b8",lineHeight:1.6}}>{rq.explanation}</p>
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
-                      <button onClick={()=>setReviewIdx(i=>Math.max(0,i-1))} disabled={reviewIdx===0} style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:9,padding:"10px",color:reviewIdx===0?"#374151":"#e2e8f0",cursor:reviewIdx===0?"default":"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
-                        <Icon name="chevL" size={13}/>Prev
-                      </button>
-                      <button onClick={()=>setReviewIdx(i=>Math.min(testQs.length-1,i+1))} disabled={reviewIdx===testQs.length-1} style={{background:"rgba(16,185,129,0.13)",border:"1px solid rgba(16,185,129,0.3)",borderRadius:9,padding:"10px",color:reviewIdx===testQs.length-1?"#374151":"#10b981",cursor:reviewIdx===testQs.length-1?"default":"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
-                        Next<Icon name="chevR" size={13}/>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          );
-        })()}
-
-        {/* ══════════ ANALYTICS ══════════ */}
-        {screen==="analytics"&&(
-          <div style={{padding:"16px 14px"}}>
-            {selTest?(
-              // ── Single test detail ──
-              <div>
-                <button onClick={()=>setSelTest(null)} style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:7,padding:"6px 11px",color:"#94a3b8",fontSize:11,cursor:"pointer",marginBottom:14}}>← All Results</button>
-                <div style={{fontSize:17,fontWeight:700,color:"#fff",marginBottom:2}}>{selTest.name}</div>
-                <div style={{fontSize:10,color:"#64748b",marginBottom:14}}>{selTest.date}</div>
-
-                <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:13,padding:14,textAlign:"center",marginBottom:12}}>
-                  <div style={{fontSize:9,color:"#6ee7b7",letterSpacing:2,marginBottom:3}}>SCORE</div>
-                  <div style={{fontSize:40,fontWeight:700,color:"#fff"}}>{selTest.score}</div>
-                  <div style={{fontSize:11,color:"#64748b"}}>out of {selTest.questions.length*4}</div>
-                </div>
-
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
-                  {[{l:"Correct",v:selTest.correct,c:"#10b981"},{l:"Wrong",v:selTest.wrong,c:"#ef4444"},{l:"Skipped",v:selTest.skipped,c:"#f59e0b"}].map(s=>(
-                    <div key={s.l} style={{background:s.c+"11",border:`1px solid ${s.c}33`,borderRadius:10,padding:"11px 5px",textAlign:"center"}}>
-                      <div style={{fontSize:20,fontWeight:700,color:s.c}}>{s.v}</div>
-                      <div style={{fontSize:9,color:"#64748b",marginTop:2}}>{s.l}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Per-question time chart */}
-                <div style={{background:"rgba(59,130,246,0.07)",border:"1px solid rgba(59,130,246,0.2)",borderRadius:13,padding:12,marginBottom:12}}>
-                  <div style={{fontSize:11,color:"#60a5fa",fontWeight:600,marginBottom:10}}>⏱️ Time Per Question</div>
-                  <div style={{display:"flex",alignItems:"flex-end",gap:2,height:65}}>
-                    {selTest.questions.map((q,i)=>{
-                      const maxT=Math.max(...selTest.questions.map(x=>x.timeSpent),1);
-                      const h=Math.max(3,(q.timeSpent/maxT)*100);
-                      return <div key={i} title={`Q${i+1}: ${fmtSec(q.timeSpent)}`} style={{flex:1,height:`${h}%`,borderRadius:"2px 2px 0 0",background:q.isCorrect?"#10b981":q.isSkipped?"#374151":"#ef4444",opacity:0.8,minHeight:2}}/>;
-                    })}
-                  </div>
-                  <div style={{display:"flex",gap:10,marginTop:6,fontSize:9,color:"#64748b"}}>
-                    <span style={{color:"#10b981"}}>■ Correct</span><span style={{color:"#ef4444"}}>■ Wrong</span><span style={{color:"#475569"}}>■ Skipped</span>
-                  </div>
-                  {/* Slowest questions */}
-                  <div style={{marginTop:10}}>
-                    <div style={{fontSize:10,color:"#94a3b8",marginBottom:6}}>MOST TIME SPENT</div>
-                    {[...selTest.questions].sort((a,b)=>b.timeSpent-a.timeSpent).slice(0,4).map((q,i)=>(
-                      <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
-                        <div>
-                          <span style={{fontSize:11,color:"#cbd5e1"}}>{q.chapter}</span>
-                          <span style={{fontSize:9,color:q.isCorrect?"#10b981":q.isSkipped?"#64748b":"#ef4444",marginLeft:6}}>{q.isCorrect?"✓":q.isSkipped?"–":"✗"}</span>
-                        </div>
-                        <span style={{fontSize:11,fontWeight:600,color:q.timeSpent>90?"#ef4444":q.timeSpent>45?"#f59e0b":"#94a3b8"}}>{fmtSec(q.timeSpent)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Subject breakdown */}
-                <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:13,padding:12}}>
-                  <div style={{fontSize:11,color:"#64748b",fontWeight:600,marginBottom:10}}>SUBJECT BREAKDOWN</div>
-                  {["Biology","Physics","Chemistry"].map(subj=>{
-                    const qs=selTest.questions.filter(q=>q.subject===subj);
-                    const c=qs.filter(q=>q.isCorrect).length;
-                    const acc=qs.length?Math.round((c/qs.length)*100):0;
-                    const avgT=qs.length?Math.round(qs.reduce((s,q)=>s+q.timeSpent,0)/qs.length):0;
-                    return (
-                      <div key={subj} style={{marginBottom:10}}>
-                        <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                          <span style={{fontSize:12,color:SUBJ_COLOR[subj]}}>{subj}</span>
-                          <div style={{display:"flex",gap:10,fontSize:11}}>
-                            <span style={{color:SUBJ_COLOR[subj],fontWeight:600}}>{acc}%</span>
-                            <span style={{color:"#64748b"}}>⏱ avg {fmtSec(avgT)}</span>
-                          </div>
-                        </div>
-                        <div style={{height:5,background:"rgba(255,255,255,0.06)",borderRadius:3,overflow:"hidden"}}>
-                          <div style={{height:"100%",width:`${acc}%`,background:SUBJ_COLOR[subj],borderRadius:3}}/>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ):(
-              // ── Overview ──
-              <>
-                <div style={{fontSize:20,fontWeight:700,color:"#fff",marginBottom:4}}>My Analysis</div>
-                <div style={{fontSize:11,color:"#64748b",marginBottom:14}}>Deep performance insights across {history.length} tests</div>
-
-                {history.length===0&&(
-                  <div style={{textAlign:"center",padding:"40px 20px",color:"#475569"}}>
-                    <div style={{fontSize:40,marginBottom:10}}>📊</div>
-                    <div style={{fontSize:14}}>No tests yet. Give your first test to see analysis!</div>
-                  </div>
-                )}
-
-                {history.length>0&&(
-                  <>
-                    {/* Show N selector */}
-                    <div style={{display:"flex",gap:7,marginBottom:14,flexWrap:"wrap"}}>
-                      {[5,10,20,history.length].map(n=>(
-                        <button key={n} onClick={()=>setHistN(n)} style={{background:histN===n?"rgba(16,185,129,0.18)":"rgba(255,255,255,0.05)",border:`1px solid ${histN===n?"#10b981":"rgba(255,255,255,0.09)"}`,borderRadius:16,padding:"4px 12px",color:histN===n?"#10b981":"#94a3b8",cursor:"pointer",fontSize:11,fontFamily:"inherit"}}>
-                          {n===history.length?"All":` Last ${n}`}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Score trend */}
-                    {(()=>{
-                      const data=history.slice(-histN);
-                      const avg=Math.round(data.reduce((s,d)=>s+d.score,0)/data.length);
-                      const best=Math.max(...data.map(d=>d.score));
-                      const worst=Math.min(...data.map(d=>d.score));
-                      return (
-                        <>
-                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
-                            {[{l:"Average",v:avg,c:"#3b82f6"},{l:"Best",v:best,c:"#10b981"},{l:"Lowest",v:worst,c:"#ef4444"}].map(s=>(
-                              <div key={s.l} style={{background:s.c+"11",border:`1px solid ${s.c}22`,borderRadius:10,padding:"11px 7px",textAlign:"center"}}>
-                                <div style={{fontSize:18,fontWeight:700,color:s.c}}>{s.v}</div>
-                                <div style={{fontSize:9,color:"#64748b",marginTop:1}}>{s.l}</div>
-                              </div>
-                            ))}
-                          </div>
-                          <div style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:13,padding:12,marginBottom:12}}>
-                            <div style={{fontSize:11,color:"#64748b",fontWeight:600,marginBottom:10}}>SCORE TREND</div>
-                            <div style={{display:"flex",alignItems:"flex-end",gap:3,height:80}}>
-                              {data.map((d,i)=>{
-                                const min=Math.min(...data.map(x=>x.score))-20;
-                                const max2=720; const pct=((d.score-min)/(max2-min))*100;
-                                return (
-                                  <button key={i} onClick={()=>setSelTest(d)} title={`${d.name}: ${d.score}`} style={{flex:1,height:`${Math.max(4,pct)}%`,background:i===data.length-1?"linear-gradient(180deg,#10b981,#059669)":"rgba(59,130,246,0.4)",borderRadius:"3px 3px 0 0",border:"none",cursor:"pointer",minHeight:3}}/>
-                                );
-                              })}
-                            </div>
-                            <div style={{fontSize:9,color:"#475569",marginTop:5,textAlign:"center"}}>Tap any bar to see details</div>
-                          </div>
-                        </>
-                      );
-                    })()}
-
-                    {/* ── WEAK TOPICS ── */}
-                    <div style={{background:"rgba(239,68,68,0.06)",border:"1px solid rgba(239,68,68,0.18)",borderRadius:13,padding:12,marginBottom:12}}>
-                      <div style={{fontSize:12,color:"#f87171",fontWeight:600,marginBottom:10}}>🎯 Weak Topics (by accuracy across {histN} tests)</div>
-                      {getWeakAnalysis(history.slice(-histN)).map(w=>(
-                        <div key={w.chapter} style={{marginBottom:9}}>
-                          <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                            <div>
-                              <span style={{fontSize:11,color:"#e2e8f0",fontWeight:600}}>{w.chapter}</span>
-                              <span style={{fontSize:9,color:SUBJ_COLOR[w.subject],marginLeft:6}}>{w.subject}</span>
-                            </div>
-                            <div style={{display:"flex",gap:8,fontSize:10}}>
-                              <span style={{color:w.accuracy<50?"#ef4444":w.accuracy<70?"#f59e0b":"#10b981",fontWeight:700}}>{w.accuracy}%</span>
-                              <span style={{color:"#64748b"}}>{w.total}Q</span>
-                            </div>
-                          </div>
-                          <div style={{height:5,background:"rgba(255,255,255,0.06)",borderRadius:3,overflow:"hidden"}}>
-                            <div style={{height:"100%",width:`${w.accuracy}%`,background:w.accuracy<50?"#ef4444":w.accuracy<70?"#f59e0b":"#10b981",borderRadius:3}}/>
-                          </div>
-                        </div>
-                      ))}
-                      {weakTopics.filter(w=>w.accuracy<70).length>0&&(
-                        <button onClick={generateAdaptiveTest} style={{width:"100%",background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.25)",borderRadius:9,padding:"10px",color:"#f87171",fontSize:12,cursor:"pointer",marginTop:4,fontWeight:600,fontFamily:"inherit"}}>
-                          🎯 Practice These Topics Now
-                        </button>
-                      )}
-                    </div>
-
-                    {/* ── TIME ANALYSIS ── */}
-                    <div style={{background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.18)",borderRadius:13,padding:12,marginBottom:12}}>
-                      <div style={{fontSize:12,color:"#60a5fa",fontWeight:600,marginBottom:10}}>⏱️ Topics Where You Take Most Time</div>
-                      {getTimeAnalysis(history.slice(-histN)).slice(0,5).map((t,i)=>(
-                        <div key={t.chapter} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
-                          <div>
-                            <div style={{fontSize:11,color:"#cbd5e1"}}>{t.chapter}</div>
-                            <div style={{fontSize:9,color:SUBJ_COLOR[t.subject]}}>{t.subject}</div>
-                          </div>
-                          <div style={{textAlign:"right"}}>
-                            <div style={{fontSize:12,fontWeight:700,color:t.avgTime>60?"#ef4444":t.avgTime>30?"#f59e0b":"#10b981"}}>{fmtSec(t.avgTime)}</div>
-                            <div style={{fontSize:9,color:"#64748b"}}>avg / question</div>
-                          </div>
-                        </div>
-                      ))}
-                      <div style={{fontSize:10,color:"#475569",marginTop:8}}>💡 Tip: Questions taking over 60s may need more revision</div>
-                    </div>
-
-                    {/* Test list */}
-                    <div style={{fontSize:11,color:"#64748b",letterSpacing:1,marginBottom:9}}>ALL TESTS — TAP FOR DETAIL</div>
-                    {recentTests.map(t=>(
-                      <button key={t.id} onClick={()=>setSelTest(t)} style={{width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:11,padding:"12px 13px",color:"#fff",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7,textAlign:"left"}}>
-                        <div>
-                          <div style={{fontSize:12,fontWeight:600}}>{t.name}</div>
-                          <div style={{fontSize:9,color:"#64748b",marginTop:2}}>{t.date} · ✓{t.correct} ✗{t.wrong} –{t.skipped}</div>
-                        </div>
-                        <div style={{textAlign:"right"}}>
-                          <div style={{fontSize:17,fontWeight:700,color:t.score>=360?"#10b981":t.score>=180?"#f59e0b":"#ef4444"}}>{t.score}</div>
-                          <div style={{fontSize:8,color:"#64748b"}}>/{t.questions.length*4}</div>
-                        </div>
-                      </button>
-                    ))}
-                  </>
-                )}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* ══════════ AI TUTOR ══════════ */}
-        {screen==="ai"&&(
-          <div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 130px)"}}>
-            <div style={{padding:"14px 14px 7px"}}>
-              <div style={{fontSize:19,fontWeight:700,color:"#fff"}}>AI Doubt Solver</div>
-              <div style={{fontSize:10,color:"#64748b",marginTop:1}}>Ask anything — Physics, Chemistry, Biology</div>
-            </div>
-            {doubts.length===0&&(
-              <div style={{padding:"0 14px 10px",display:"flex",flexDirection:"column",gap:6}}>
-                {["Explain the process of meiosis","What is Fleming's right hand rule?","Difference between ionic and covalent bonds"].map(s=>(
-                  <button key={s} onClick={()=>setDoubt(s)} style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:8,padding:"8px 11px",color:"#94a3b8",cursor:"pointer",fontSize:11,textAlign:"left"}}>"{s}"</button>
-                ))}
-              </div>
-            )}
-            <div style={{flex:1,overflowY:"auto",padding:"0 14px"}}>
-              {doubts.map((m,i)=>(
-                <div key={i} style={{marginBottom:9,display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start"}}>
-                  {m.role==="ai"&&<div style={{width:24,height:24,borderRadius:"50%",background:"linear-gradient(135deg,#10b981,#3b82f6)",display:"flex",alignItems:"center",justifyContent:"center",marginRight:6,flexShrink:0,fontSize:12}}>🤖</div>}
-                  <div style={{maxWidth:"80%",background:m.role==="user"?"rgba(16,185,129,0.18)":"rgba(255,255,255,0.05)",border:`1px solid ${m.role==="user"?"rgba(16,185,129,0.35)":"rgba(255,255,255,0.09)"}`,borderRadius:m.role==="user"?"12px 12px 3px 12px":"12px 12px 12px 3px",padding:"8px 11px",fontSize:12,lineHeight:1.6,color:"#e2e8f0"}}>
-                    {m.text}
-                  </div>
-                </div>
-              ))}
-              {aiLoad&&<div style={{display:"flex",alignItems:"center",gap:7,marginBottom:9}}>
-                <div style={{width:24,height:24,borderRadius:"50%",background:"linear-gradient(135deg,#10b981,#3b82f6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12}}>🤖</div>
-                <div style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.09)",borderRadius:"12px 12px 12px 3px",padding:"8px 12px",display:"flex",gap:4}}>
-                  {[0,1,2].map(i=><div key={i} style={{width:5,height:5,borderRadius:"50%",background:"#10b981",animation:`bounce 1s ${i*0.2}s infinite`}}/>)}
-                </div>
-              </div>}
-              <div ref={chatEnd}/>
-            </div>
-            <div style={{padding:"8px 14px 2px",borderTop:"1px solid rgba(255,255,255,0.06)"}}>
-              <div style={{display:"flex",gap:7,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.09)",borderRadius:11,padding:"6px 9px"}}>
-                <input value={doubt} onChange={e=>setDoubt(e.target.value)} onKeyDown={e=>e.key==="Enter"&&askDoubt()} placeholder="Type your NEET doubt..." style={{flex:1,background:"none",border:"none",color:"#e8eaf0",fontSize:12,outline:"none",fontFamily:"inherit"}}/>
-                <button onClick={askDoubt} disabled={aiLoad||!doubt.trim()} style={{background:doubt.trim()?"linear-gradient(135deg,#10b981,#3b82f6)":"rgba(255,255,255,0.05)",border:"none",borderRadius:7,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",cursor:doubt.trim()?"pointer":"default",color:"#fff",flexShrink:0}}>
-                  <Icon name="send" size={13}/>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ══════════ ADMIN ══════════ */}
-        {screen==="admin"&&(
-          <div style={{padding:"16px 14px"}}>
-            <div style={{fontSize:19,fontWeight:700,color:"#fff",marginBottom:2}}>Admin Panel</div>
-            <div style={{fontSize:10,color:"#64748b",marginBottom:14}}>Private — upload & generate NEET tests</div>
-            <div style={{display:"flex",gap:7,marginBottom:16,background:"rgba(255,255,255,0.04)",borderRadius:9,padding:3}}>
-              {[{id:"upload",label:"📤 Upload"},{id:"generate",label:"⚡ AI Generate"}].map(t=>(
-                <button key={t.id} onClick={()=>setAdminTab(t.id)} style={{flex:1,background:adminTab===t.id?"rgba(16,185,129,0.18)":"none",border:`1px solid ${adminTab===t.id?"#10b981":"transparent"}`,borderRadius:7,padding:"8px 5px",color:adminTab===t.id?"#10b981":"#64748b",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:adminTab===t.id?700:400}}>
-                  {t.label}
-                </button>
-              ))}
-            </div>
-
-            {adminTab==="upload"&&(
-              <div>
-                <div style={{background:"rgba(255,193,7,0.07)",border:"1px solid rgba(255,193,7,0.18)",borderRadius:11,padding:"11px 13px",marginBottom:14}}>
-                  <div style={{fontSize:11,color:"#fbbf24",fontWeight:600,marginBottom:3}}>🔒 Private Zone</div>
-                  <div style={{fontSize:10,color:"#92400e",lineHeight:1.6}}>Paste NCERT / coaching questions. AI converts them + translates to Hindi. Students only see final tests.</div>
-                </div>
-                <textarea value={pastedQ} onChange={e=>setPastedQ(e.target.value)} placeholder={"1. Which organelle produces ATP?\na) Nucleus  b) Mitochondria\nc) Ribosome  d) Golgi\nAnswer: b\n\n2. Newton's 2nd law F=?\na) mv  b) ma  c) ms  d) mt\nAnswer: b"} style={{width:"100%",minHeight:180,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.09)",borderRadius:11,padding:"11px 12px",color:"#e2e8f0",fontSize:11,outline:"none",fontFamily:"monospace",resize:"vertical",lineHeight:1.6,boxSizing:"border-box"}}/>
-                <button onClick={convertQuestions} disabled={genLoad||!pastedQ.trim()} style={{width:"100%",background:pastedQ.trim()?"linear-gradient(135deg,#10b981,#059669)":"rgba(255,255,255,0.05)",border:"none",borderRadius:11,padding:"12px",color:"#fff",fontSize:13,cursor:pastedQ.trim()?"pointer":"default",fontWeight:600,marginTop:9,display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
-                  {genLoad?<><div style={{width:13,height:13,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>Processing...</>:<><Icon name="zap" size={14}/>Convert to Test</>}
-                </button>
-                {genTest&&(
-                  <div style={{marginTop:14}}>
-                    <div style={{fontSize:11,color:"#10b981",fontWeight:600,marginBottom:9}}>✅ {genTest.length} Questions Ready</div>
-                    {genTest.map((q,i)=>(
-                      <div key={i} style={{background:"rgba(16,185,129,0.06)",border:"1px solid rgba(16,185,129,0.14)",borderRadius:10,padding:"11px 12px",marginBottom:7}}>
-                        <div style={{display:"flex",gap:6,marginBottom:5}}>
-                          <span style={{fontSize:9,color:SUBJ_COLOR[q.subject]||"#94a3b8",background:(SUBJ_COLOR[q.subject]||"#94a3b8")+"22",padding:"2px 6px",borderRadius:8}}>{q.subject}</span>
-                          <span style={{fontSize:9,color:"#64748b",background:"rgba(255,255,255,0.05)",padding:"2px 6px",borderRadius:8}}>{q.difficulty}</span>
-                        </div>
-                        <div style={{fontSize:11,color:"#cbd5e1",marginBottom:5}}>{q.en?.q}</div>
-                        {q.en?.options?.map((o,oi)=><div key={oi} style={{fontSize:10,color:oi===q.answer?"#10b981":"#64748b",padding:"1px 0"}}>{["A","B","C","D"][oi]}. {o}{oi===q.answer?" ✓":""}</div>)}
-                      </div>
-                    ))}
-                    <button onClick={()=>startTest(genTest,genTest.length*2,"Custom Test")} style={{width:"100%",background:"linear-gradient(135deg,#3b82f6,#1d4ed8)",border:"none",borderRadius:10,padding:"11px",color:"#fff",fontSize:12,cursor:"pointer",fontWeight:600,marginTop:4}}>
-                      🚀 Launch This Test
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {adminTab==="generate"&&(
-              <div>
-                <div style={{background:"rgba(139,92,246,0.08)",border:"1px solid rgba(139,92,246,0.18)",borderRadius:11,padding:"12px 13px",marginBottom:14}}>
-                  <div style={{fontSize:12,color:"#a78bfa",fontWeight:600,marginBottom:4}}>⚡ Quick AI Generator</div>
-                  <div style={{fontSize:10,color:"#7c3aed",lineHeight:1.6}}>Select a topic → AI generates test → you review → launch to students.</div>
-                </div>
-                {[
-                  {topic:"Cell Biology & Genetics",sub:"Biology",n:10},{topic:"Laws of Motion & Thermodynamics",sub:"Physics",n:10},
-                  {topic:"Chemical Bonding & Organic Chemistry",sub:"Chemistry",n:10},{topic:"Full Mixed NEET",sub:"All",n:20},
-                ].map(t=>(
-                  <button key={t.topic} onClick={()=>{setPastedQ(`Generate ${t.n} NEET MCQs on ${t.topic} (${t.sub}). Strictly NCERT based. Include answer and explanation.`);setAdminTab("upload");}} style={{width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(139,92,246,0.18)",borderRadius:10,padding:"12px 13px",color:"#fff",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7,textAlign:"left"}}>
-                    <div><div style={{fontSize:12,fontWeight:600}}>{t.topic}</div><div style={{fontSize:9,color:"#64748b",marginTop:1}}>{t.sub} · {t.n} Qs</div></div>
-                    <div style={{background:"rgba(139,92,246,0.18)",color:"#a78bfa",borderRadius:6,padding:"4px 9px",fontSize:9,fontWeight:600}}>Select</div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-      </main>
-
-      <style>{`
-        @keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        *{box-sizing:border-box;margin:0;padding:0}
-        ::-webkit-scrollbar{width:3px}
-        ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
-        input::placeholder,textarea::placeholder{color:#475569}
-      `}</style>
-    </div>
-  );
+// UTILS
+function pad(n){return String(n).padStart(2,"0")}
+function fmtTime(s){
+  var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;
+  return h>0?h+":"+pad(m)+":"+pad(sc):pad(m)+":"+pad(sc);
+}
+function fmtSec(s){return s<60?s+"s":Math.floor(s/60)+"m "+s%60+"s"}
+function g(id){return document.getElementById(id)}
+function LS(k,v){
+  if(v===undefined){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}
+  try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}
 }
 
-document.getElementById('loading').style.display = 'none';
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<MedTest />);
+// HTML HELPERS
+function card(content,extra){return '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px;'+(extra||'')+'">'+content+'</div>'}
+function btn(label,onclick,bg,color,extra){
+  bg=bg||"linear-gradient(135deg,#10b981,#059669)";
+  color=color||"white";
+  return '<button onclick="'+onclick+'" style="background:'+bg+';border:none;border-radius:12px;padding:13px 16px;color:'+color+';cursor:pointer;font-family:Georgia,serif;font-size:14px;font-weight:700;width:100%;display:block;'+(extra||'')+'">'+label+'</button>';
+}
+function inp(id,placeholder,type,value,oninput,style){
+  return '<input id="'+id+'" placeholder="'+placeholder+'" type="'+(type||"text")+'" value="'+(value||"")+'" oninput="'+(oninput||"")+'" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:11px 14px;color:#e8eaf0;font-size:13px;outline:none;font-family:Georgia,serif;width:100%;box-sizing:border-box;'+(style||'')+'"/>';
+}
+function tag(text,color){return '<span style="background:'+color+'22;color:'+color+';padding:2px 8px;border-radius:10px;font-size:9px">'+text+'</span>'}
+
+// AUTH
+async function handleAuth(){
+  var name=ST.authName.trim(),phone=ST.authPhone.replace(/\D/g,""),email=ST.authEmail.trim().toLowerCase(),pass=ST.authPass;
+  ss({authErr:"",authLoading:true});
+  if(ST.authMode==="register"){
+    if(!name){ss({authErr:"Please enter your full name.",authLoading:false});return}
+    if(phone.length!==10){ss({authErr:"Please enter a valid 10-digit phone number.",authLoading:false});return}
+    if(!email.includes("@")){ss({authErr:"Please enter a valid email address.",authLoading:false});return}
+    if(pass.length<6){ss({authErr:"Password must be at least 6 characters.",authLoading:false});return}
+    try{
+      var res=await sb.signUp(email,pass);
+      if(res.error){ss({authErr:res.error.message||"Registration failed.",authLoading:false});return}
+      var student={name:name,phone:phone,email:email,joinDate:new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})};
+      await sb.saveProfile({email:email,name:name,phone:phone,join_date:student.joinDate});
+      LS("mt_student",student);
+      await loadHistory(email);
+      ss({student:student,screen:"home",authLoading:false});
+    }catch(e){ss({authErr:"Registration failed. Check internet and try again.",authLoading:false})}
+  }else{
+    if(!email||!pass){ss({authErr:"Please enter email and password.",authLoading:false});return}
+    try{
+      var res=await sb.signIn(email,pass);
+      if(res.error){ss({authErr:"Invalid email or password.",authLoading:false});return}
+      var profile=await sb.getProfile(email);
+      var student=profile?{name:profile.name,phone:profile.phone||"",email:profile.email,joinDate:profile.join_date}:{name:email.split("@")[0],phone:"",email:email,joinDate:new Date().toLocaleDateString("en-IN")};
+      LS("mt_student",student);
+      await loadHistory(email);
+      ss({student:student,screen:"home",authLoading:false});
+    }catch(e){ss({authErr:"Login failed. Please try again.",authLoading:false})}
+  }
+}
+
+async function loadHistory(email){
+  try{
+    var results=await sb.getResults(email);
+    if(results&&results.length>0){
+      ss({history:results.map(function(r){return Object.assign({},r,{name:r.test_name||"Mock Test",questions:r.questions||[],totalTime:r.total_time||0})})});
+    }else{
+      ss({history:LS("mt_hist_"+email)||[]});
+    }
+  }catch(e){ss({history:LS("mt_hist_"+email)||[]})}
+}
+
+function logout(){
+  if(ST.timerInterval)clearInterval(ST.timerInterval);
+  LS("mt_student",null);
+  ss({student:null,history:[],screen:"login",authEmail:"",authPass:"",authName:"",authPhone:"",authErr:""});
+}
+
+// TEST
+function startTest(qs,minutes,name){
+  if(ST.timerInterval)clearInterval(ST.timerInterval);
+  ss({testQs:qs,answers:{},marked:{},currentQ:0,qTimings:{},testDone:false,reviewMode:false,timeLeft:minutes*60,qStart:Date.now(),testName:name||"Mock Test",screen:"test",showPalette:false});
+  var interval=setInterval(function(){
+    if(ST.timeLeft<=1){clearInterval(interval);finalizeTest();return}
+    ss({timeLeft:ST.timeLeft-1});
+  },1000);
+  ss({timerInterval:interval});
+}
+
+function goQ(idx){
+  var elapsed=Math.round((Date.now()-(ST.qStart||Date.now()))/1000);
+  var t=Object.assign({},ST.qTimings);
+  t[ST.currentQ]=(t[ST.currentQ]||0)+elapsed;
+  ss({qTimings:t,currentQ:idx,qStart:Date.now()});
+}
+
+function finalizeTest(){
+  if(ST.timerInterval)clearInterval(ST.timerInterval);
+  var elapsed=Math.round((Date.now()-(ST.qStart||Date.now()))/1000);
+  var t=Object.assign({},ST.qTimings);
+  t[ST.currentQ]=(t[ST.currentQ]||0)+elapsed;
+  ss({qTimings:t,testDone:true,timerInterval:null});
+  saveResult(t);
+}
+
+async function saveResult(timings){
+  if(!ST.student||!ST.testQs)return;
+  var questions=ST.testQs.map(function(q,i){
+    return{qId:q.id,subject:q.sub,chapter:q.ch,difficulty:q.dif,answer:ST.answers[i],correct:q.a,isCorrect:ST.answers[i]===q.a,isSkipped:ST.answers[i]===undefined,timeSpent:timings[i]||0};
+  });
+  var score=questions.reduce(function(s,q){return s+(q.isCorrect?4:q.isSkipped?0:-1)},0);
+  var result={id:Date.now(),name:ST.testName,date:new Date().toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}),questions:questions,score:score,correct:questions.filter(function(q){return q.isCorrect}).length,wrong:questions.filter(function(q){return !q.isCorrect&&!q.isSkipped}).length,skipped:questions.filter(function(q){return q.isSkipped}).length,totalTime:questions.reduce(function(s,q){return s+(q.timeSpent||0)},0)};
+  var existing=LS("mt_hist_"+ST.student.email)||[];
+  var updated=existing.concat([result]);
+  LS("mt_hist_"+ST.student.email,updated);
+  ss({history:updated});
+  try{await sb.saveResult({student_email:ST.student.email,test_name:result.name,score:result.score,correct:result.correct,wrong:result.wrong,skipped:result.skipped,total_time:result.totalTime,questions:result.questions,date:result.date})}catch(e){}
+}
+
+function weakAnalysis(hist){
+  var map={};
+  hist.forEach(function(t){(t.questions||[]).forEach(function(q){
+    var k=q.subject+"|"+q.chapter;
+    if(!map[k])map[k]={subject:q.subject,chapter:q.chapter,total:0,wrong:0,correct:0,totalTime:0,count:0};
+    map[k].total++;
+    if(q.isCorrect)map[k].correct++;
+    else if(!q.isSkipped)map[k].wrong++;
+    map[k].totalTime+=(q.timeSpent||0);map[k].count++;
+  })});
+  return Object.values(map).map(function(m){return Object.assign({},m,{accuracy:m.total?Math.round((m.correct/m.total)*100):0,avgTime:m.count?Math.round(m.totalTime/m.count):0})}).sort(function(a,b){return a.accuracy-b.accuracy});
+}
+
+function adaptiveTest(){
+  var weak=weakAnalysis(ST.history).filter(function(w){return w.accuracy<70});
+  if(!weak.length){alert("No weak topics! Keep practicing!");return}
+  var chapters=weak.map(function(w){return w.chapter});
+  var filtered=QS.filter(function(q){return chapters.indexOf(q.ch)>=0});
+  startTest(filtered.length?filtered:QS.slice(0,8),filtered.length?filtered.length*2:20,"Adaptive Test");
+}
+
+// AI
+async function askDoubt(){
+  var q=ST.doubt.trim();if(!q)return;
+  ss({doubts:ST.doubts.concat([{role:"user",text:q}]),doubt:"",aiLoad:true});
+  setTimeout(function(){var e=g("chat-end");if(e)e.scrollIntoView({behavior:"smooth"})},100);
+  try{
+    var res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,system:"You are MedTest AI - expert NEET tutor. Answer Physics, Chemistry, Biology doubts under 150 words. Give chapter name and a memory tip.",messages:[{role:"user",content:q}]})});
+    var data=await res.json();
+    var text=(data.content||[]).map(function(c){return c.text||""}).join("")||"Sorry, try again.";
+    ss({doubts:ST.doubts.concat([{role:"ai",text:text}]),aiLoad:false});
+  }catch(e){ss({doubts:ST.doubts.concat([{role:"ai",text:"Connection error. Please try again."}]),aiLoad:false})}
+  setTimeout(function(){var e=g("chat-end");if(e)e.scrollIntoView({behavior:"smooth"})},100);
+}
+
+async function convertQ(){
+  if(!ST.pastedQ.trim())return;
+  ss({genLoad:true});
+  try{
+    var res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,system:'Convert to JSON array only (no markdown): [{"sub":"Biology","ch":"Cell Biology","dif":"Medium","en":{"q":"...","o":["A","B","C","D"]},"hi":{"q":"...Hindi","o":["A","B","C","D"]},"a":0,"exp":"..."}] a is 0-indexed. Translate to Hindi. Return ONLY JSON array.',messages:[{role:"user",content:"Convert:\n\n"+ST.pastedQ}]})});
+    var data=await res.json();
+    var raw=(data.content||[]).map(function(c){return c.text||""}).join("")||"[]";
+    var parsed=JSON.parse(raw.replace(/```json|```/g,"").trim());
+    ss({genTest:parsed,genLoad:false});
+  }catch(e){alert("Parse error. Check format and try again.");ss({genLoad:false})}
+}
+
+// RENDER
+function render(){
+  var app=g("app");if(!app)return;
+  if(!ST.student){app.innerHTML=renderLogin();return}
+  app.innerHTML=renderHeader()+
+    '<main style="padding-top:60px;padding-bottom:72px;min-height:100vh;overflow-y:auto;max-height:100vh">'+
+    renderScreen()+
+    '</main>'+
+    renderNav()+
+    (ST.menuOpen?renderMenu():"");
+  if(ST.screen==="ai"){var ca=g("chat-area");if(ca)ca.scrollTop=ca.scrollHeight}
+}
+
+function renderScreen(){
+  if(ST.screen==="home")return renderHome();
+  if(ST.screen==="mock")return renderMock();
+  if(ST.screen==="test")return ST.testQs?(ST.testDone?renderResult():renderTest()):"";
+  if(ST.screen==="ai")return renderAI();
+  if(ST.screen==="analytics")return renderAnalytics();
+  if(ST.screen==="admin")return renderAdmin();
+  return renderHome();
+}
+
+function renderLogin(){
+  var isReg=ST.authMode==="register";
+  var html='<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;background:#0a0f1e">';
+  html+='<div style="position:fixed;inset:0;background:radial-gradient(ellipse at 30% 40%,rgba(16,185,129,0.1),transparent 60%),radial-gradient(ellipse at 70% 70%,rgba(59,130,246,0.08),transparent 60%);pointer-events:none"></div>';
+  html+='<div style="position:relative;width:100%;max-width:380px">';
+  html+='<div style="text-align:center;margin-bottom:28px">';
+  html+='<div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#10b981,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px">&#x1FA7A;</div>';
+  html+='<div style="font-size:26px;font-weight:700;color:#fff;letter-spacing:1px">MedTest</div>';
+  html+='<div style="font-size:11px;color:#6ee7b7;letter-spacing:3px;margin-top:2px">NEET PREPARATION PLATFORM</div></div>';
+  html+='<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:24px">';
+  html+='<div style="display:flex;background:rgba(255,255,255,0.04);border-radius:12px;padding:3px;margin-bottom:20px">';
+  html+='<button onclick="ss({authMode:\'login\'})" style="flex:1;background:'+(isReg?"none":"rgba(16,185,129,0.2)")+';border:1px solid '+(isReg?"transparent":"#10b981")+';border-radius:9px;padding:9px;color:'+(isReg?"#64748b":"#10b981")+';cursor:pointer;font-family:Georgia,serif;font-size:13px;font-weight:'+(isReg?"400":"700")+'">Login</button>';
+  html+='<button onclick="ss({authMode:\'register\'})" style="flex:1;background:'+(isReg?"rgba(16,185,129,0.2)":"none")+';border:1px solid '+(isReg?"#10b981":"transparent")+';border-radius:9px;padding:9px;color:'+(isReg?"#10b981":"#64748b")+';cursor:pointer;font-family:Georgia,serif;font-size:13px;font-weight:'+(isReg?"700":"400")+'">Register</button>';
+  html+='</div>';
+  if(isReg){
+    html+='<div style="margin-bottom:14px"><div style="font-size:11px;color:#94a3b8;margin-bottom:5px">FULL NAME</div>'+inp("a-name","Your full name","text",ST.authName,"SS({authName:this.value})")+'</div>';
+    html+='<div style="margin-bottom:14px"><div style="font-size:11px;color:#94a3b8;margin-bottom:5px">PHONE NUMBER</div><div style="position:relative"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;color:#6ee7b7;font-weight:600">+91</span>'+inp("a-phone","10-digit number","tel",ST.authPhone,"phoneInput(this)","padding-left:46px")+'</div><div style="font-size:10px;color:#475569;margin-top:4px">Used for WhatsApp reminders</div></div>';
+  }
+  html+='<div style="margin-bottom:14px"><div style="font-size:11px;color:#94a3b8;margin-bottom:5px">EMAIL ADDRESS</div>'+inp("a-email","your@email.com","email",ST.authEmail,"SS({authEmail:this.value})")+'</div>';
+  html+='<div style="margin-bottom:'+(isReg?"14":"20")+'px"><div style="font-size:11px;color:#94a3b8;margin-bottom:5px">PASSWORD'+(isReg?' <span style="color:#475569">(min 6 chars)</span>':"")+'</div>'+inp("a-pass","Password","password",ST.authPass,"SS({authPass:this.value})","onkeydown=\"if(event.key==='Enter')handleAuth()\"")+'</div>';
+  if(ST.authErr){
+    var isOk=ST.authErr.startsWith("OK:");
+    html+='<div style="background:'+(isOk?"rgba(16,185,129,0.1)":"rgba(239,68,68,0.1)")+';border:1px solid '+(isOk?"rgba(16,185,129,0.3)":"rgba(239,68,68,0.3)")+';border-radius:8px;padding:8px 12px;color:'+(isOk?"#6ee7b7":"#f87171")+';font-size:12px;margin-bottom:14px">'+ST.authErr+'</div>';
+  }
+  var btnLabel=ST.authLoading?(isReg?"Creating account...":"Logging in..."):(isReg?"Create Account":"Login to MedTest");
+  html+=btn(btnLabel,"handleAuth()",ST.authLoading?"rgba(255,255,255,0.1)":"linear-gradient(135deg,#10b981,#059669)");
+  html+='</div><div style="text-align:center;margin-top:14px;font-size:11px;color:#475569">MedTest - Your NEET preparation partner</div></div></div>';
+  return html;
+}
+
+// Alias for inline handlers
+function SS(u){Object.assign(ST,u)}
+
+function renderHeader(){
+  return '<header style="position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,15,30,0.97);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between;padding:0 14px;height:54px">'+
+    '<div style="display:flex;align-items:center;gap:8px">'+
+    '<div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#10b981,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:14px">&#x1FA7A;</div>'+
+    '<div><div style="font-size:15px;font-weight:700;color:#fff">MedTest</div><div style="font-size:8px;color:#6ee7b7;letter-spacing:2px">NEET PREP</div></div></div>'+
+    '<div style="display:flex;gap:7px;align-items:center">'+
+    '<button onclick="ss({lang:ST.lang===\'en\'?\'hi\':\'en\'})" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:3px 9px;color:#e8eaf0;font-size:10px;cursor:pointer">'+(ST.lang==="en"?"&#x1F1EE;&#x1F1F3; Hindi":"&#x1F1EC;&#x1F1E7; Eng")+'</button>'+
+    '<div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:16px;padding:3px 9px;font-size:10px;color:#6ee7b7">&#x1F464; '+(ST.student&&ST.student.name?ST.student.name.split(" ")[0]:"")+'</div>'+
+    '<button onclick="ss({menuOpen:true})" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:20px;padding:4px">&#x2630;</button></div></header>';
+}
+
+function renderNav(){
+  var items=[["home","&#x1F3E0;","Home"],["mock","&#x1F4DD;","Tests"],["ai","&#x1F916;","AI Tutor"],["analytics","&#x1F4CA;","Analysis"],["admin","&#x2699;","Admin"]];
+  var html='<nav style="position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(10,15,30,0.97);border-top:1px solid rgba(255,255,255,0.07);display:flex;justify-content:space-around;padding:5px 0 9px">';
+  items.forEach(function(item){
+    var active=ST.screen===item[0];
+    html+='<button onclick="ss({screen:\''+item[0]+'\',menuOpen:false})" style="display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:'+(active?"#10b981":"#475569")+';cursor:pointer;font-size:8px;letter-spacing:0.5px;padding:0">'+
+      '<div style="padding:3px 10px;border-radius:9px;background:'+(active?"rgba(16,185,129,0.15)":"none")+';font-size:16px">'+item[1]+'</div>'+item[2]+'</button>';
+  });
+  return html+'</nav>';
+}
+
+function renderMenu(){
+  var html='<div style="position:fixed;inset:0;z-index:200;display:flex" onclick="if(event.target===this)ss({menuOpen:false})">'+
+    '<div style="flex:1;background:rgba(0,0,0,0.6)"></div>'+
+    '<div style="width:220px;background:#0d1327;border-left:1px solid rgba(255,255,255,0.08);padding:60px 0 20px;display:flex;flex-direction:column;gap:2px">';
+  html+='<div style="padding:0 16px 14px;border-bottom:1px solid rgba(255,255,255,0.07);margin-bottom:6px">'+
+    '<div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:2px">'+(ST.student&&ST.student.name||"")+'</div>'+
+    '<div style="font-size:10px;color:#6ee7b7;margin-bottom:1px">&#x1F4E7; '+(ST.student&&ST.student.email||"")+'</div>'+
+    (ST.student&&ST.student.phone?'<div style="font-size:10px;color:#6ee7b7">&#x1F4F1; +91 '+ST.student.phone+'</div>':"")+
+    '</div>';
+  [["home","&#x1F3E0;","Home"],["mock","&#x1F4DD;","Tests"],["ai","&#x1F916;","AI Tutor"],["analytics","&#x1F4CA;","My Analysis"],["admin","&#x2699;","Admin"]].forEach(function(item){
+    var active=ST.screen===item[0];
+    html+='<button onclick="ss({screen:\''+item[0]+'\',menuOpen:false})" style="display:flex;align-items:center;gap:11px;padding:11px 18px;background:'+(active?"rgba(16,185,129,0.15)":"none")+';border:none;color:'+(active?"#10b981":"#94a3b8")+';cursor:pointer;font-size:12px;border-left:3px solid '+(active?"#10b981":"transparent")+';text-align:left;width:100%"><span style="font-size:16px">'+item[1]+'</span>'+item[2]+'</button>';
+  });
+  html+='<div style="margin:16px 18px 0;border-top:1px solid rgba(255,255,255,0.07);padding-top:16px"><button onclick="logout()" style="display:flex;align-items:center;gap:10px;background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px">&#x1F6AA; Logout</button></div>';
+  return html+'</div></div>';
+}
+
+function renderHome(){
+  var weak=weakAnalysis(ST.history).filter(function(w){return w.accuracy<70});
+  var best=ST.history.length?Math.max.apply(null,ST.history.map(function(h){return h.score})):"-";
+  var avg=ST.history.length?Math.round(ST.history.reduce(function(s,h){return s+h.score},0)/ST.history.length):"-";
+  var html='<div style="padding:16px 14px" class="fade">';
+  html+='<div style="margin-bottom:18px"><div style="font-size:11px;color:#6ee7b7;letter-spacing:2px;margin-bottom:2px">WELCOME BACK</div><div style="font-size:22px;font-weight:700;color:#fff;line-height:1.2">Hi, '+(ST.student&&ST.student.name?ST.student.name.split(" ")[0]:"")+'! &#x1F44B;<br><span style="color:#10b981;font-size:18px">Ready to crack NEET?</span></div></div>';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px">';
+  [["Tests Done",ST.history.length,"&#x1F4DD;","#3b82f6"],["Best Score",best,"&#x1F3C6;","#f59e0b"],["Avg Score",avg,"&#x1F4CA;","#10b981"],["Weak Topics",weak.length,"&#x26A0;","#ef4444"]].forEach(function(s){
+    html+='<div style="background:rgba(255,255,255,0.04);border:1px solid '+s[3]+'22;border-radius:11px;padding:12px 11px;display:flex;align-items:center;gap:9px">'+
+      '<div style="width:34px;height:34px;border-radius:9px;background:'+s[3]+'20;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">'+s[2]+'</div>'+
+      '<div><div style="font-size:18px;font-weight:700;color:#fff">'+s[1]+'</div><div style="font-size:9px;color:#64748b;margin-top:1px">'+s[0]+'</div></div></div>';
+  });
+  html+='</div>';
+  if(weak.length){
+    html+='<div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:12px 14px;margin-bottom:14px">';
+    html+='<div style="font-size:12px;color:#f87171;font-weight:600;margin-bottom:8px">&#x26A0; Needs Attention</div>';
+    weak.slice(0,3).forEach(function(w){html+='<div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:11px;color:#fca5a5">'+w.chapter+' ('+w.subject+')</span><span style="font-size:11px;color:#ef4444;font-weight:600">'+w.accuracy+'%</span></div>'});
+    html+=btn("&#x1F3AF; Start Adaptive Test","adaptiveTest()","rgba(239,68,68,0.2)","#f87171","margin-top:8px;border:1px solid rgba(239,68,68,0.3);font-size:12px");
+    html+='</div>';
+  }
+  html+='<div style="display:flex;flex-direction:column;gap:9px">';
+  html+=btn("&#x1F4DD; Full Mock Test - 3:20:00","startTest(QS,200,'Full Mock Test')");
+  html+=btn("&#x1F4DA; Chapter Practice","ss({screen:'mock'})","rgba(59,130,246,0.15)","#fff","border:1px solid rgba(59,130,246,0.3)");
+  html+=btn("&#x1F916; AI Doubt Solver","ss({screen:'ai'})","rgba(139,92,246,0.15)","#fff","border:1px solid rgba(139,92,246,0.3)");
+  html+='</div></div>';
+  return html;
+}
+
+function renderMock(){
+  var html='<div style="padding:16px 14px" class="fade"><div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:16px">Choose Test</div>';
+  var tests=[
+    ["Full Mock Test",QS.length+" Q - 3 hrs 20 min","&#x1F4CB;",QS,200,"#10b981"],
+    ["Biology Only",QS.filter(function(q){return q.sub==="Biology"}).length+" Q - 30 min","&#x1F9EC;",QS.filter(function(q){return q.sub==="Biology"}),30,"#22c55e"],
+    ["Physics Only",QS.filter(function(q){return q.sub==="Physics"}).length+" Q - 30 min","&#x269B;",QS.filter(function(q){return q.sub==="Physics"}),30,"#3b82f6"],
+    ["Chemistry Only",QS.filter(function(q){return q.sub==="Chemistry"}).length+" Q - 30 min","&#x1F9EA;",QS.filter(function(q){return q.sub==="Chemistry"}),30,"#f59e0b"]
+  ];
+  tests.forEach(function(t){
+    html+='<button onclick="startTest(QS.filter(function(q){return \''+t[0]+'\'.indexOf(\'Full\')>=0||q.sub===\''+t[0].split(" ")[0]+'\'}),'+t[4]+',\''+t[0]+'\')" style="background:rgba(255,255,255,0.04);border:1px solid '+t[5]+'33;border-radius:13px;padding:15px 14px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:12px;text-align:left;margin-bottom:9px;width:100%">'+
+      '<span style="font-size:26px">'+t[2]+'</span>'+
+      '<div><div style="font-size:14px;font-weight:600">'+t[0]+'</div><div style="font-size:10px;color:#64748b;margin-top:2px">'+t[1]+'</div></div>'+
+      '<div style="margin-left:auto;background:'+t[5]+'22;color:'+t[5]+';border-radius:7px;padding:5px 11px;font-size:10px;font-weight:600">Start</div></button>';
+  });
+  if(weakAnalysis(ST.history).filter(function(w){return w.accuracy<70}).length){
+    html+='<button onclick="adaptiveTest()" style="background:rgba(255,255,255,0.04);border:1px solid rgba(245,158,11,0.3);border-radius:13px;padding:15px 14px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:12px;text-align:left;width:100%">'+
+      '<span style="font-size:26px">&#x1F3AF;</span>'+
+      '<div><div style="font-size:14px;font-weight:600">Adaptive Test</div><div style="font-size:10px;color:#64748b;margin-top:2px">AI-generated from weak topics</div></div>'+
+      '<div style="margin-left:auto;background:rgba(245,158,11,0.2);color:#f59e0b;border-radius:7px;padding:5px 11px;font-size:10px;font-weight:600">Smart</div></button>';
+  }
+  return html+'</div>';
+}
+
+function renderTest(){
+  var q=ST.testQs[ST.currentQ],total=ST.testQs.length,attempted=Object.keys(ST.answers).length;
+  var html='<div style="padding:8px 12px" class="fade">';
+  html+='<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);border-radius:11px;padding:8px 12px;margin-bottom:10px">'+
+    '<div style="font-weight:700;font-size:18px;color:'+(ST.timeLeft<600?"#ef4444":ST.timeLeft<1800?"#f59e0b":"#10b981")+'">&#x23F1; '+fmtTime(ST.timeLeft)+'</div>'+
+    '<div style="font-size:10px;color:#64748b">&#x2713;'+attempted+' &#x1F6A9;'+Object.keys(ST.marked).length+'/'+total+'</div>'+
+    '<button onclick="finalizeTest()" style="background:#10b981;border:none;border-radius:7px;padding:6px 13px;color:#fff;font-size:11px;cursor:pointer;font-weight:600">Submit</button></div>';
+  html+='<div style="height:3px;background:rgba(255,255,255,0.06);border-radius:3px;margin-bottom:10px;overflow:hidden"><div style="height:100%;width:'+Math.round((attempted/total)*100)+'%;background:linear-gradient(90deg,#10b981,#3b82f6);border-radius:3px;transition:width 0.3s"></div></div>';
+  html+='<button onclick="ss({showPalette:!ST.showPalette})" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:9px;padding:7px 12px;color:#94a3b8;font-size:10px;cursor:pointer;margin-bottom:10px;display:flex;justify-content:space-between;font-family:Georgia,serif"><span>&#x1F4CA; Q'+(ST.currentQ+1)+'/'+total+'</span><span>'+(ST.showPalette?"&#x25B2; Hide":"&#x25BC; Show palette")+'</span></button>';
+  if(ST.showPalette){
+    html+='<div style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.07);border-radius:11px;padding:10px;margin-bottom:10px"><div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px">';
+    ST.testQs.forEach(function(_,i){
+      var st=ST.marked[i]?"review":ST.answers[i]!==undefined?"answered":"none";
+      var bg=st==="answered"?"#10b981":st==="review"?"#f59e0b":"rgba(255,255,255,0.07)";
+      html+='<button onclick="goQ('+i+');ss({showPalette:false})" style="height:28px;border-radius:5px;background:'+bg+';border:'+(i===ST.currentQ?"2px solid #fff":"1px solid transparent")+';color:#fff;font-size:9px;font-weight:600;cursor:pointer">'+(i+1)+'</button>';
+    });
+    html+='</div></div>';
+  }
+  html+='<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px;margin-bottom:10px">';
+  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">'+
+    '<div style="display:flex;gap:6px">'+tag(q.sub,SC[q.sub]||"#94a3b8")+tag(q.ch,"#94a3b8")+'</div>'+
+    '<span style="font-size:10px;color:#475569">'+q.dif+'</span></div>';
+  html+='<p style="font-size:13px;line-height:1.65;color:#e2e8f0;margin-bottom:13px">'+q[ST.lang].q+'</p>';
+  q[ST.lang].o.forEach(function(opt,oi){
+    var sel=ST.answers[ST.currentQ]===oi;
+    html+='<button onclick="var a=Object.assign({},ST.answers);a[ST.currentQ]='+oi+';ss({answers:a})" style="width:100%;background:'+(sel?"rgba(16,185,129,0.18)":"rgba(255,255,255,0.04)")+';border:1px solid '+(sel?"#10b981":"rgba(255,255,255,0.09)")+';border-radius:9px;padding:10px 12px;color:'+(sel?"#10b981":"#cbd5e1")+';cursor:pointer;font-size:12px;text-align:left;display:flex;align-items:center;gap:9px;margin-bottom:6px;transition:all 0.15s;font-family:Georgia,serif">'+
+      '<span style="width:20px;height:20px;border-radius:50%;background:'+(sel?"#10b981":"rgba(255,255,255,0.08)")+';display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;color:#fff">'+["A","B","C","D"][oi]+'</span>'+opt+'</button>';
+  });
+  html+='</div>';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:8px">';
+  var prevD=ST.currentQ===0;
+  html+='<button onclick="if(ST.currentQ>0)goQ(ST.currentQ-1)" '+(prevD?"disabled":"")+' style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:9px;padding:10px 6px;color:'+(prevD?"#374151":"#e2e8f0")+';cursor:'+(prevD?"default":"pointer")+';font-size:12px;font-family:Georgia,serif">&#x25C4; Prev</button>';
+  var isMarked=ST.marked[ST.currentQ];
+  html+='<button onclick="var m=Object.assign({},ST.marked);m[ST.currentQ]=!m[ST.currentQ];ss({marked:m})" style="background:'+(isMarked?"rgba(245,158,11,0.18)":"rgba(255,255,255,0.05)")+';border:1px solid '+(isMarked?"#f59e0b":"rgba(255,255,255,0.09)")+';border-radius:9px;padding:10px 6px;color:'+(isMarked?"#f59e0b":"#94a3b8")+';cursor:pointer;font-size:11px;font-family:Georgia,serif">&#x1F6A9; '+(isMarked?"Marked":"Mark")+'</button>';
+  var nextD=ST.currentQ===total-1;
+  html+='<button onclick="if(ST.currentQ<ST.testQs.length-1)goQ(ST.currentQ+1)" '+(nextD?"disabled":"")+' style="background:'+(nextD?"rgba(255,255,255,0.03)":"rgba(16,185,129,0.13)")+';border:1px solid '+(nextD?"rgba(255,255,255,0.08)":"rgba(16,185,129,0.35)")+';border-radius:9px;padding:10px 6px;color:'+(nextD?"#374151":"#10b981")+';cursor:'+(nextD?"default":"pointer")+';font-size:12px;font-family:Georgia,serif">Next &#x25BA;</button>';
+  html+='</div>';
+  if(ST.answers[ST.currentQ]!==undefined){
+    html+='<button onclick="var a=Object.assign({},ST.answers);delete a[ST.currentQ];ss({answers:a})" style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.18);border-radius:9px;padding:7px;color:#f87171;font-size:11px;cursor:pointer;width:100%;font-family:Georgia,serif">Clear Answer</button>';
+  }
+  return html+'</div>';
+}
+
+function renderResult(){
+  if(!ST.testQs)return"";
+  var last=ST.history[ST.history.length-1];
+  if(ST.reviewMode){
+    var rq=ST.testQs[ST.reviewIdx],ans=ST.answers[ST.reviewIdx],isC=ans===rq.a,isS=ans===undefined;
+    var timing=last&&last.questions&&last.questions[ST.reviewIdx];
+    var html='<div style="padding:16px 14px" class="fade">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'+
+      '<button onclick="ss({reviewMode:false})" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:7px;padding:6px 11px;color:#94a3b8;font-size:11px;cursor:pointer">&#x2190; Results</button>'+
+      '<span style="font-size:12px;color:#64748b">Q'+(ST.reviewIdx+1)+'/'+ST.testQs.length+'</span>'+
+      '<span style="font-size:11px;color:'+(isS?"#f59e0b":isC?"#10b981":"#ef4444")+';font-weight:600">'+(isS?"SKIPPED":isC?"&#x2713; CORRECT":"&#x2717; WRONG")+'</span></div>';
+    if(timing){
+      html+='<div style="background:rgba(59,130,246,0.07);border:1px solid rgba(59,130,246,0.2);border-radius:12px;padding:10px 14px;margin-bottom:10px;display:flex;justify-content:space-between">'+
+        '<span style="font-size:11px;color:#60a5fa">&#x23F1; Time on this question</span>'+
+        '<span style="font-size:11px;font-weight:700;color:'+(timing.timeSpent>60?"#ef4444":timing.timeSpent>30?"#f59e0b":"#10b981")+'">'+fmtSec(timing.timeSpent||0)+'</span></div>';
+    }
+    html+='<div style="background:rgba(255,255,255,0.04);border:1px solid '+(isS?"rgba(255,255,255,0.08)":isC?"rgba(16,185,129,0.3)":"rgba(239,68,68,0.3)")+';border-radius:13px;padding:14px;margin-bottom:10px">';
+    html+='<div style="display:flex;gap:6px;margin-bottom:9px">'+tag(rq.sub,SC[rq.sub]||"#94a3b8")+tag(rq.ch,"#94a3b8")+'</div>';
+    html+='<p style="font-size:13px;line-height:1.65;color:#e2e8f0;margin-bottom:12px">'+rq[ST.lang].q+'</p>';
+    rq[ST.lang].o.forEach(function(opt,oi){
+      var isA=oi===rq.a,isU=oi===ans;
+      var bg=isA?"rgba(16,185,129,0.15)":isU?"rgba(239,68,68,0.15)":"rgba(255,255,255,0.04)";
+      var bc=isA?"#10b981":isU?"#ef4444":"rgba(255,255,255,0.08)";
+      var col=isA?"#10b981":isU?"#ef4444":"#94a3b8";
+      html+='<div style="background:'+bg+';border:1px solid '+bc+';border-radius:8px;padding:9px 11px;margin-bottom:5px;font-size:12px;color:'+col+';display:flex;align-items:center;gap:8px">'+
+        '<span style="width:18px;height:18px;border-radius:50%;background:'+(isA?"#10b981":isU?"#ef4444":"rgba(255,255,255,0.08)")+';display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;flex-shrink:0">'+["A","B","C","D"][oi]+'</span>'+opt+(isA?" &#x2713;":"")+(isU&&!isA?" &#x2717;":"")+'</div>';
+    });
+    html+='</div>';
+    html+='<div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.18);border-radius:11px;padding:10px 12px;margin-bottom:12px">'+
+      '<div style="font-size:10px;color:#6ee7b7;margin-bottom:4px;font-weight:600">&#x1F4A1; EXPLANATION</div>'+
+      '<p style="font-size:12px;color:#94a3b8;line-height:1.6">'+rq.exp+'</p></div>';
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">';
+    var rPD=ST.reviewIdx===0,rND=ST.reviewIdx===ST.testQs.length-1;
+    html+='<button onclick="if(ST.reviewIdx>0)ss({reviewIdx:ST.reviewIdx-1})" '+(rPD?"disabled":"")+' style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:9px;padding:10px;color:'+(rPD?"#374151":"#e2e8f0")+';cursor:'+(rPD?"default":"pointer")+';font-size:12px;font-family:Georgia,serif">&#x25C4; Prev</button>';
+    html+='<button onclick="if(ST.reviewIdx<ST.testQs.length-1)ss({reviewIdx:ST.reviewIdx+1})" '+(rND?"disabled":"")+' style="background:rgba(16,185,129,0.13);border:1px solid rgba(16,185,129,0.3);border-radius:9px;padding:10px;color:'+(rND?"#374151":"#10b981")+';cursor:'+(rND?"default":"pointer")+';font-size:12px;font-family:Georgia,serif">Next &#x25BA;</button>';
+    return html+'</div></div>';
+  }
+  var correct=0,wrong=0;
+  Object.keys(ST.answers).forEach(function(i){if(ST.answers[i]===ST.testQs[i].a)correct++;else wrong++});
+  var skipped=ST.testQs.length-correct-wrong;
+  var total=correct*4-wrong;
+  var pct=Math.round((Math.max(0,total)/(ST.testQs.length*4))*100);
+  var timings=last&&last.questions||[];
+  var maxT=timings.length?Math.max.apply(null,timings.map(function(t){return t.timeSpent||0}).concat([1])):1;
+  var html='<div style="padding:16px 14px" class="fade">';
+  html+='<div style="text-align:center;margin-bottom:20px"><div style="font-size:46px;margin-bottom:5px">'+(pct>=60?"&#x1F389;":pct>=40?"&#x1F44D;":"&#x1F4AA;")+'</div><div style="font-size:10px;color:#6ee7b7;letter-spacing:2px">TEST COMPLETE</div><div style="font-size:42px;font-weight:700;color:#fff;margin:4px 0">'+Math.max(0,total)+'</div><div style="font-size:12px;color:#64748b">out of '+ST.testQs.length*4+' marks</div></div>';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-bottom:16px">';
+  [["Correct",correct,"#10b981"],["Wrong",wrong,"#ef4444"],["Skipped",skipped,"#f59e0b"]].forEach(function(s){
+    html+='<div style="background:'+s[2]+'12;border:1px solid '+s[2]+'33;border-radius:11px;padding:12px 6px;text-align:center"><div style="font-size:22px;font-weight:700;color:'+s[2]+'">'+s[1]+'</div><div style="font-size:9px;color:#64748b;margin-top:2px">'+s[0]+'</div></div>';
+  });
+  html+='</div>';
+  if(timings.length){
+    html+='<div style="background:rgba(59,130,246,0.07);border:1px solid rgba(59,130,246,0.2);border-radius:13px;padding:12px;margin-bottom:12px">';
+    html+='<div style="font-size:11px;color:#60a5fa;font-weight:600;margin-bottom:10px">&#x23F1; Time Per Question</div>';
+    html+='<div style="display:flex;align-items:flex-end;gap:2px;height:65px;margin-bottom:6px">';
+    timings.forEach(function(t){
+      var h=Math.max(2,((t.timeSpent||0)/maxT)*100);
+      var c=t.isCorrect?"#10b981":t.isSkipped?"#374151":"#ef4444";
+      html+='<div title="'+fmtSec(t.timeSpent||0)+'" style="flex:1;height:'+h+'%;border-radius:2px 2px 0 0;background:'+c+';opacity:0.85;min-height:2px"></div>';
+    });
+    html+='</div><div style="display:flex;gap:10px;font-size:9px;color:#64748b;margin-bottom:8px"><span style="color:#10b981">&#x25A0; Correct</span><span style="color:#ef4444">&#x25A0; Wrong</span><span style="color:#475569">&#x25A0; Skipped</span></div>';
+    var slow=[].concat(timings).sort(function(a,b){return(b.timeSpent||0)-(a.timeSpent||0)}).slice(0,3);
+    html+='<div style="font-size:10px;color:#94a3b8;margin-bottom:6px">SLOWEST QUESTIONS</div>';
+    slow.forEach(function(t){
+      html+='<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05)"><span style="font-size:11px;color:#94a3b8">'+t.chapter+' '+(t.isCorrect?"&#x2713;":t.isSkipped?"-":"&#x2717;")+'</span><span style="font-size:11px;font-weight:600;color:'+((t.timeSpent||0)>60?"#ef4444":(t.timeSpent||0)>30?"#f59e0b":"#94a3b8")+'">'+fmtSec(t.timeSpent||0)+'</span></div>';
+    });
+    html+='</div>';
+  }
+  html+=btn("&#x1F441; Review All Questions","ss({reviewMode:true,reviewIdx:0})","rgba(59,130,246,0.13)","#60a5fa","border:1px solid rgba(59,130,246,0.25);margin-bottom:9px");
+  html+=btn("&#x1F4CA; View Full Analysis","ss({screen:'analytics'})","rgba(16,185,129,0.13)","#10b981","border:1px solid rgba(16,185,129,0.25);margin-bottom:9px");
+  html+=btn("Retake Test","startTest(QS,200,'Full Mock Test')");
+  return html+'</div>';
+}
+
+function renderAI(){
+  var html='<div style="display:flex;flex-direction:column;height:calc(100vh - 132px)" class="fade">';
+  html+='<div style="padding:14px 14px 7px"><div style="font-size:19px;font-weight:700;color:#fff">AI Doubt Solver</div><div style="font-size:10px;color:#64748b;margin-top:1px">Ask anything - Physics, Chemistry, Biology</div></div>';
+  if(!ST.doubts.length){
+    html+='<div style="padding:0 14px 10px;display:flex;flex-direction:column;gap:6px">';
+    ["Explain the process of meiosis","What is Fleming right hand rule?","Difference between ionic and covalent bonds"].forEach(function(s){
+      html+='<button onclick="SS({doubt:\''+s.replace(/'/g,"\\'")+'\'});askDoubt()" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:8px 11px;color:#94a3b8;cursor:pointer;font-size:11px;text-align:left;width:100%;font-family:Georgia,serif">&#x1F4AC; "'+s+'"</button>';
+    });
+    html+='</div>';
+  }
+  html+='<div id="chat-area" style="flex:1;overflow-y:auto;padding:0 14px">';
+  ST.doubts.forEach(function(m){
+    html+='<div style="margin-bottom:9px;display:flex;justify-content:'+(m.role==="user"?"flex-end":"flex-start")+'">';
+    if(m.role==="ai")html+='<div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#10b981,#3b82f6);display:flex;align-items:center;justify-content:center;margin-right:6px;flex-shrink:0;font-size:12px">&#x1F916;</div>';
+    html+='<div style="max-width:80%;background:'+(m.role==="user"?"rgba(16,185,129,0.18)":"rgba(255,255,255,0.05)")+';border:1px solid '+(m.role==="user"?"rgba(16,185,129,0.35)":"rgba(255,255,255,0.09)")+';border-radius:'+(m.role==="user"?"12px 12px 3px 12px":"12px 12px 12px 3px")+';padding:8px 11px;font-size:12px;line-height:1.6;color:#e2e8f0">'+m.text+'</div></div>';
+  });
+  if(ST.aiLoad){
+    html+='<div style="display:flex;align-items:center;gap:7px;margin-bottom:9px">'+
+      '<div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#10b981,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:12px">&#x1F916;</div>'+
+      '<div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);border-radius:12px 12px 12px 3px;padding:10px 14px;display:flex;gap:4px">'+
+      '<div style="width:6px;height:6px;border-radius:50%;background:#10b981;animation:bounce 1s 0s infinite"></div>'+
+      '<div style="width:6px;height:6px;border-radius:50%;background:#10b981;animation:bounce 1s 0.2s infinite"></div>'+
+      '<div style="width:6px;height:6px;border-radius:50%;background:#10b981;animation:bounce 1s 0.4s infinite"></div>'+
+      '</div></div>';
+  }
+  html+='<div id="chat-end"></div></div>';
+  html+='<div style="padding:8px 14px 2px;border-top:1px solid rgba(255,255,255,0.06)">'+
+    '<div style="display:flex;gap:7px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);border-radius:11px;padding:6px 9px">'+
+    '<input id="doubt-input" value="" placeholder="Type your NEET doubt..." onkeydown="if(event.key===\'Enter\'){SS({doubt:this.value});askDoubt()}" oninput="SS({doubt:this.value})" style="flex:1;background:none;border:none;color:#e8eaf0;font-size:12px;outline:none;font-family:Georgia,serif"/>'+
+    '<button onclick="SS({doubt:document.getElementById(\'doubt-input\').value});askDoubt()" style="background:linear-gradient(135deg,#10b981,#3b82f6);border:none;border-radius:7px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;flex-shrink:0;font-size:16px">&#x27A4;</button>'+
+    '</div></div>';
+  return html+'</div>';
+}
+
+function renderAnalytics(){
+  if(ST.selTest)return renderTestDetail(ST.selTest);
+  var hist=ST.history.slice(-ST.histN);
+  var weak=weakAnalysis(hist);
+  var timeMap={};
+  hist.forEach(function(t){(t.questions||[]).forEach(function(q){
+    var k=q.subject+"|"+q.chapter;
+    if(!timeMap[k])timeMap[k]={subject:q.subject,chapter:q.chapter,totalTime:0,count:0};
+    timeMap[k].totalTime+=(q.timeSpent||0);timeMap[k].count++;
+  })});
+  var timeTopics=Object.values(timeMap).map(function(m){return Object.assign({},m,{avgTime:Math.round(m.totalTime/m.count)})}).sort(function(a,b){return b.avgTime-a.avgTime});
+  var html='<div style="padding:16px 14px" class="fade"><div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:4px">My Analysis</div><div style="font-size:11px;color:#64748b;margin-bottom:14px">Insights across '+ST.history.length+' tests</div>';
+  if(!ST.history.length)return html+'<div style="text-align:center;padding:40px 20px;color:#475569"><div style="font-size:40px;margin-bottom:10px">&#x1F4CA;</div><div>No tests yet! Give your first test.</div></div></div>';
+  html+='<div style="display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap">';
+  [5,10,20,ST.history.length].forEach(function(n){
+    html+='<button onclick="ss({histN:'+n+'})" style="background:'+(ST.histN===n?"rgba(16,185,129,0.18)":"rgba(255,255,255,0.05)")+';border:1px solid '+(ST.histN===n?"#10b981":"rgba(255,255,255,0.09)")+';border-radius:16px;padding:4px 12px;color:'+(ST.histN===n?"#10b981":"#94a3b8")+';cursor:pointer;font-size:11px;font-family:Georgia,serif">'+(n===ST.history.length?"All":"Last "+n)+'</button>';
+  });
+  html+='</div>';
+  if(hist.length){
+    var mn=Math.min.apply(null,hist.map(function(h){return h.score}))-20;
+    html+='<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:13px;padding:12px;margin-bottom:12px">'+
+      '<div style="font-size:11px;color:#64748b;font-weight:600;margin-bottom:12px">SCORE TREND</div>'+
+      '<div style="display:flex;align-items:flex-end;gap:3px;height:80px">';
+    hist.forEach(function(d,i){
+      var pct=((d.score-mn)/(720-mn))*100;
+      html+='<button onclick="ss({selTest:JSON.parse(atob(\''+btoa(JSON.stringify(d))+'\'))})" style="flex:1;height:'+Math.max(4,pct)+'%;background:'+(i===hist.length-1?"linear-gradient(180deg,#10b981,#059669)":"rgba(59,130,246,0.4)")+';border-radius:3px 3px 0 0;border:none;cursor:pointer;min-height:3px" title="'+d.name+': '+d.score+'"></button>';
+    });
+    html+='</div><div style="font-size:9px;color:#475569;margin-top:5px;text-align:center">Tap any bar for details</div></div>';
+  }
+  html+='<div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.18);border-radius:13px;padding:12px;margin-bottom:12px">'+
+    '<div style="font-size:12px;color:#f87171;font-weight:600;margin-bottom:10px">&#x1F3AF; Weak Topics</div>';
+  if(!weak.length)html+='<div style="font-size:12px;color:#64748b">No weak topics! &#x1F389;</div>';
+  weak.forEach(function(w){
+    html+='<div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><div><span style="font-size:11px;color:#e2e8f0;font-weight:600">'+w.chapter+'</span><span style="font-size:9px;color:'+(SC[w.subject]||"#94a3b8")+';margin-left:6px">'+w.subject+'</span></div><div style="display:flex;gap:8px;font-size:10px"><span style="color:'+(w.accuracy<50?"#ef4444":w.accuracy<70?"#f59e0b":"#10b981")+';font-weight:700">'+w.accuracy+'%</span><span style="color:#64748b">'+w.total+'Q</span></div></div>'+
+      '<div style="height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+w.accuracy+'%;background:'+(w.accuracy<50?"#ef4444":w.accuracy<70?"#f59e0b":"#10b981")+';border-radius:3px"></div></div></div>';
+  });
+  if(weak.filter(function(w){return w.accuracy<70}).length)html+=btn("&#x1F3AF; Practice Weak Topics","adaptiveTest()","rgba(239,68,68,0.15)","#f87171","margin-top:4px;border:1px solid rgba(239,68,68,0.25);font-size:12px");
+  html+='</div>';
+  html+='<div style="background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.18);border-radius:13px;padding:12px;margin-bottom:12px">'+
+    '<div style="font-size:12px;color:#60a5fa;font-weight:600;margin-bottom:10px">&#x23F1; Topics Taking Most Time</div>';
+  if(!timeTopics.length)html+='<div style="font-size:12px;color:#64748b">Take more tests to see data</div>';
+  timeTopics.slice(0,5).forEach(function(t){
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05)"><div><div style="font-size:11px;color:#cbd5e1">'+t.chapter+'</div><div style="font-size:9px;color:'+(SC[t.subject]||"#94a3b8")+'">'+t.subject+'</div></div><div style="text-align:right"><div style="font-size:12px;font-weight:700;color:'+(t.avgTime>60?"#ef4444":t.avgTime>30?"#f59e0b":"#10b981")+'">'+fmtSec(t.avgTime)+'</div><div style="font-size:9px;color:#64748b">avg/question</div></div></div>';
+  });
+  html+='</div>';
+  html+='<div style="font-size:11px;color:#64748b;letter-spacing:1px;margin-bottom:9px">ALL TESTS - TAP FOR DETAIL</div>';
+  [].concat(ST.history).reverse().slice(0,ST.histN).forEach(function(t){
+    html+='<button onclick="ss({selTest:JSON.parse(atob(\''+btoa(JSON.stringify(t))+'\'))})" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:11px;padding:12px 13px;color:#fff;cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;text-align:left;width:100%">'+
+      '<div><div style="font-size:12px;font-weight:600">'+t.name+'</div><div style="font-size:9px;color:#64748b;margin-top:2px">'+t.date+' &bull; &#x2713;'+t.correct+' &#x2717;'+t.wrong+' &ndash;'+t.skipped+'</div></div>'+
+      '<div style="text-align:right"><div style="font-size:17px;font-weight:700;color:'+(t.score>=360?"#10b981":t.score>=180?"#f59e0b":"#ef4444")+'">'+t.score+'</div><div style="font-size:8px;color:#64748b">/'+(t.questions&&t.questions.length?t.questions.length*4:720)+'</div></div></button>';
+  });
+  return html+'</div>';
+}
+
+function renderTestDetail(t){
+  var timings=t.questions||[];
+  var maxT=timings.length?Math.max.apply(null,timings.map(function(q){return q.timeSpent||0}).concat([1])):1;
+  var html='<div style="padding:16px 14px" class="fade">';
+  html+='<button onclick="ss({selTest:null})" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:7px;padding:6px 11px;color:#94a3b8;font-size:11px;cursor:pointer;margin-bottom:14px">&#x2190; All Results</button>';
+  html+='<div style="font-size:17px;font-weight:700;color:#fff;margin-bottom:2px">'+t.name+'</div>';
+  html+='<div style="font-size:10px;color:#64748b;margin-bottom:14px">'+t.date+'</div>';
+  html+='<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:13px;padding:14px;text-align:center;margin-bottom:12px">'+
+    '<div style="font-size:9px;color:#6ee7b7;letter-spacing:2px;margin-bottom:3px">SCORE</div>'+
+    '<div style="font-size:40px;font-weight:700;color:#fff">'+t.score+'</div>'+
+    '<div style="font-size:11px;color:#64748b">out of '+(timings.length?timings.length*4:720)+'</div></div>';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">';
+  [["Correct",t.correct,"#10b981"],["Wrong",t.wrong,"#ef4444"],["Skipped",t.skipped,"#f59e0b"]].forEach(function(s){
+    html+='<div style="background:'+s[2]+'11;border:1px solid '+s[2]+'33;border-radius:10px;padding:11px 5px;text-align:center"><div style="font-size:20px;font-weight:700;color:'+s[2]+'">'+s[1]+'</div><div style="font-size:9px;color:#64748b;margin-top:2px">'+s[0]+'</div></div>';
+  });
+  html+='</div>';
+  if(timings.length){
+    html+='<div style="background:rgba(59,130,246,0.07);border:1px solid rgba(59,130,246,0.2);border-radius:13px;padding:12px;margin-bottom:12px">'+
+      '<div style="font-size:11px;color:#60a5fa;font-weight:600;margin-bottom:10px">&#x23F1; Time Per Question</div>'+
+      '<div style="display:flex;align-items:flex-end;gap:2px;height:65px;margin-bottom:6px">';
+    timings.forEach(function(q){
+      var h=Math.max(2,((q.timeSpent||0)/maxT)*100);
+      html+='<div title="'+fmtSec(q.timeSpent||0)+'" style="flex:1;height:'+h+'%;border-radius:2px 2px 0 0;background:'+(q.isCorrect?"#10b981":q.isSkipped?"#374151":"#ef4444")+';opacity:0.8;min-height:2px"></div>';
+    });
+    html+='</div>';
+    html+='<div style="font-size:10px;color:#94a3b8;margin-bottom:6px">SLOWEST QUESTIONS</div>';
+    [].concat(timings).sort(function(a,b){return(b.timeSpent||0)-(a.timeSpent||0)}).slice(0,4).forEach(function(q){
+      html+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)"><div><span style="font-size:11px;color:#cbd5e1">'+q.chapter+'</span><span style="font-size:9px;color:'+(q.isCorrect?"#10b981":q.isSkipped?"#64748b":"#ef4444")+';margin-left:6px">'+(q.isCorrect?"&#x2713;":q.isSkipped?"&ndash;":"&#x2717;")+'</span></div><span style="font-size:11px;font-weight:600;color:'+((q.timeSpent||0)>90?"#ef4444":(q.timeSpent||0)>45?"#f59e0b":"#94a3b8")+'">'+fmtSec(q.timeSpent||0)+'</span></div>';
+    });
+    html+='</div>';
+  }
+  html+='<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:13px;padding:12px">'+
+    '<div style="font-size:11px;color:#64748b;font-weight:600;margin-bottom:10px">SUBJECT BREAKDOWN</div>';
+  ["Biology","Physics","Chemistry"].forEach(function(subj){
+    var qs=timings.filter(function(q){return q.subject===subj});
+    var c=qs.filter(function(q){return q.isCorrect}).length;
+    var acc=qs.length?Math.round((c/qs.length)*100):0;
+    var avgT=qs.length?Math.round(qs.reduce(function(s,q){return s+(q.timeSpent||0)},0)/qs.length):0;
+    html+='<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;color:'+(SC[subj]||"#94a3b8")+'">'+subj+'</span><div style="display:flex;gap:10px;font-size:11px"><span style="color:'+(SC[subj]||"#94a3b8")+';font-weight:600">'+acc+'%</span><span style="color:#64748b">&#x23F1; avg '+fmtSec(avgT)+'</span></div></div>'+
+      '<div style="height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+acc+'%;background:'+(SC[subj]||"#94a3b8")+';border-radius:3px"></div></div></div>';
+  });
+  return html+'</div></div>';
+}
+
+function renderAdmin(){
+  var html='<div style="padding:16px 14px" class="fade">'+
+    '<div style="font-size:19px;font-weight:700;color:#fff;margin-bottom:2px">Admin Panel</div>'+
+    '<div style="font-size:10px;color:#64748b;margin-bottom:14px">Private - upload and generate tests</div>';
+  html+='<div style="display:flex;gap:7px;margin-bottom:16px;background:rgba(255,255,255,0.04);border-radius:9px;padding:3px">';
+  [["upload","&#x1F4E4; Upload"],["generate","&#x26A1; AI Generate"]].forEach(function(t){
+    var active=ST.adminTab===t[0];
+    html+='<button onclick="ss({adminTab:\''+t[0]+'\'});" style="flex:1;background:'+(active?"rgba(16,185,129,0.18)":"none")+';border:1px solid '+(active?"#10b981":"transparent")+';border-radius:7px;padding:8px 5px;color:'+(active?"#10b981":"#64748b")+';cursor:pointer;font-size:11px;font-family:Georgia,serif;font-weight:'+(active?"700":"400")+'">'+t[1]+'</button>';
+  });
+  html+='</div>';
+  if(ST.adminTab==="upload"){
+    html+='<div style="background:rgba(255,193,7,0.07);border:1px solid rgba(255,193,7,0.18);border-radius:11px;padding:11px 13px;margin-bottom:14px">'+
+      '<div style="font-size:11px;color:#fbbf24;font-weight:600;margin-bottom:3px">&#x1F512; Private Zone</div>'+
+      '<div style="font-size:10px;color:#92400e;line-height:1.6">Paste NCERT or coaching questions. AI converts and translates to Hindi. Students only see final tests.</div></div>';
+    html+='<textarea id="pq" placeholder="1. Which organelle produces ATP?\na) Nucleus  b) Mitochondria\nc) Ribosome  d) Golgi\nAnswer: b" oninput="SS({pastedQ:this.value})" style="width:100%;min-height:160px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:11px;padding:11px 12px;color:#e2e8f0;font-size:11px;outline:none;font-family:monospace;resize:vertical;line-height:1.6;box-sizing:border-box">'+ST.pastedQ+'</textarea>';
+    var canConvert=ST.pastedQ&&ST.pastedQ.trim().length>0;
+    html+=btn(ST.genLoad?"&#x23F3; Processing...":"&#x26A1; Convert to Test","convertQ()",canConvert?"linear-gradient(135deg,#10b981,#059669)":"rgba(255,255,255,0.05)","#fff","margin-top:9px");
+    if(ST.genTest&&ST.genTest.length){
+      html+='<div style="margin-top:14px"><div style="font-size:11px;color:#10b981;font-weight:600;margin-bottom:9px">&#x2705; '+ST.genTest.length+' Questions Ready!</div>';
+      ST.genTest.slice(0,3).forEach(function(q){
+        var subj=q.sub||q.subject||"?";
+        var ch=q.ch||q.chapter||"?";
+        var dif=q.dif||q.difficulty||"Medium";
+        var qtext=(q.en&&q.en.q)||q.q||"";
+        var opts=(q.en&&q.en.o)||q.o||q.opts||[];
+        var ans=q.a!==undefined?q.a:(q.ans!==undefined?q.ans:(q.answer!==undefined?q.answer:0));
+        html+='<div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.14);border-radius:10px;padding:11px 12px;margin-bottom:7px">'+
+          '<div style="display:flex;gap:6px;margin-bottom:5px">'+tag(subj,SC[subj]||"#94a3b8")+tag(dif,"#94a3b8")+'</div>'+
+          '<div style="font-size:11px;color:#cbd5e1;margin-bottom:5px">'+qtext+'</div>';
+        opts.forEach(function(o,oi){
+          html+='<div style="font-size:10px;color:'+(oi===ans?"#10b981":"#64748b")+';padding:1px 0">'+["A","B","C","D"][oi]+". "+o+(oi===ans?" &#x2713;":"")+'</div>';
+        });
+        html+='</div>';
+      });
+      if(ST.genTest.length>3)html+='<div style="font-size:11px;color:#64748b;margin-bottom:9px">...and '+(ST.genTest.length-3)+' more questions</div>';
+      html+=btn("&#x1F680; Launch This Test","startTest(ST.genTest,ST.genTest.length*2,'Custom Test')","linear-gradient(135deg,#3b82f6,#1d4ed8)","#fff","margin-top:4px");
+      html+='</div>';
+    }
+  }else{
+    html+='<div style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.18);border-radius:11px;padding:12px 13px;margin-bottom:14px">'+
+      '<div style="font-size:12px;color:#a78bfa;font-weight:600;margin-bottom:4px">&#x26A1; AI Test Generator</div>'+
+      '<div style="font-size:10px;color:#7c3aed;line-height:1.6">Select a topic. AI generates the test. You review it. Then launch to students.</div></div>';
+    [["Cell Biology and Genetics","Biology",10],["Laws of Motion and Thermodynamics","Physics",10],["Chemical Bonding and Organic","Chemistry",10],["Full Mixed NEET","All",20]].forEach(function(t){
+      var prompt="Generate "+t[2]+" NEET MCQs on "+t[0]+" ("+t[1]+"). Strictly NCERT based. Include answer and explanation.";
+      html+='<button onclick="ss({pastedQ:\''+prompt+'\',adminTab:\'upload\'})" style="background:rgba(255,255,255,0.04);border:1px solid rgba(139,92,246,0.18);border-radius:10px;padding:12px 13px;color:#fff;cursor:pointer;display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;text-align:left;width:100%">'+
+        '<div><div style="font-size:12px;font-weight:600">'+t[0]+'</div><div style="font-size:9px;color:#64748b;margin-top:1px">'+t[1]+' &bull; '+t[2]+' Qs</div></div>'+
+        '<div style="background:rgba(139,92,246,0.18);color:#a78bfa;border-radius:6px;padding:4px 9px;font-size:9px;font-weight:600">Select</div></button>';
+    });
+  }
+  return html+'</div>';
+}
+
+// INIT
+
+function phoneInput(el){var v=el.value.replace(/[^0-9]/g,'').slice(0,10);el.value=v;ST.authPhone=v;}
+
+function selByB64(b){try{ss({selTest:JSON.parse(atob(b))})}catch(e){console.log('sel error',e)}}
+async function init(){
+  try{
+    var saved=JSON.parse(localStorage.getItem("mt_student")||"null");
+    if(saved&&saved.email){
+      ST.student=saved;
+      await loadHistory(saved.email);
+      ST.screen="home";
+    }
+  }catch(e){}
+  render();
+}
+init();
 </script>
 </body>
 </html>
-
